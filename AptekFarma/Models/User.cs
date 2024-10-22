@@ -9,7 +9,5 @@ namespace _AptekFarma.Models
         public string? apellidos { get; set; }
         public string? nif { get; set; }
         public string? fecha_nacimiento { get; set; }
-
-        public string rol {  get; set; }
     }
 }
