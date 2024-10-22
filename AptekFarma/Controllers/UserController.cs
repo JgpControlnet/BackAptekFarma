@@ -19,7 +19,7 @@ using System.Text;
 
 namespace _AptekFarma.Controllers
 {
-    [Route("/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -61,7 +61,7 @@ namespace _AptekFarma.Controllers
                 nif = dto.Nif,
                 fecha_nacimiento = dto.FechaNacimiento.ToString(),
                 Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber
+                PhoneNumber = dto.PhoneNumber,
             };
 
             await _userManager.CreateAsync(user, dto.Password);
