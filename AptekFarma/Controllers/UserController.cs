@@ -30,16 +30,6 @@ namespace _AptekFarma.Controllers
         private readonly IConfiguration _configuration;
         private readonly IPasswordHasher<User> _passwordHasher;
 
-
-
-        //public UserController(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor, AppDbContext context, SignInManager<IdentityUser> signInManager)
-        //{
-        //    _userManager = userManager;
-        //    _httpContextAccessor = httpContextAccessor;
-        //    _context = context;
-        //    _signInManager = signInManager;
-        //}
-
         public UserController(
             UserManager<User> userManager,
             SignInManager<User> signInManager,

@@ -1,6 +1,7 @@
 ﻿using _AptekFarma.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using AptekFarma.Models;
 
 namespace _AptekFarma.Context
 {
@@ -10,6 +11,9 @@ namespace _AptekFarma.Context
         {
             
         }
+
+        public DbSet<Products> Products { get; set; }
+        public DbSet<Campaigns> Campaigns { get; set; }
 
     }
 }
