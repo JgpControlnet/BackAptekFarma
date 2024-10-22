@@ -61,7 +61,8 @@ namespace _AptekFarma.Controllers
                 nif = dto.Nif,
                 fecha_nacimiento = dto.FechaNacimiento.ToString(),
                 Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber
+                PhoneNumber = dto.PhoneNumber,
+                Pharmacy = _context.Pharmacies.FirstOrDefault(p => p.Id == dto.PharmacyId)
             };
 
             await _userManager.CreateAsync(user, dto.Password);
@@ -110,8 +111,6 @@ namespace _AptekFarma.Controllers
             // Return failed login response
             return BadRequest(new { success = false, error = "La solicitud no fue exitosa." });
         }
-     
-
 
         // GET: api/Usuarios
         [HttpGet("ListUsuario")]
@@ -138,7 +137,7 @@ namespace _AptekFarma.Controllers
             return result;
         }
 
-        // GET: api/Usuarios/5
+        // GET: api/Usuarios/string
         [HttpGet("Usuario")]
         [Authorize]
         public async Task<ActionResult<UserDTO>> GetUsuario(string id)

@@ -12,5 +12,6 @@
 
         public string rol {  get; set; }
         public DateTime FechaNacimiento { get; set; }
+        public int PharmacyId { get; set; }
     }
 }
