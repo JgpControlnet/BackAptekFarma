@@ -66,7 +66,7 @@ namespace _AptekFarma.Controllers
             var roleExist = await _roleManager.RoleExistsAsync(rol.Name);
             if (!roleExist)
             {
-                await _roleManager.CreateAsync(new Roles { Name = rol.Name });
+                await _roleManager.CreateAsync(new Roles { Name = rol.Name, Descripcion = rol.Descripcion });
             }
             return Ok(rol);
         }

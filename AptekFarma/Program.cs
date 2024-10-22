@@ -54,8 +54,9 @@ var ConnectionsString = builder.Configuration.GetConnectionString("Connection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseMySQL(ConnectionsString));
 
 builder.Services.AddAuthentication();
-builder.Services.AddIdentityApiEndpoints<User>().
-    AddEntityFrameworkStores<AppDbContext>(); ;
+builder.Services.AddIdentity<User, Roles>()
+    .AddRoles<Roles>()
+    .AddEntityFrameworkStores<AppDbContext>();
 
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
