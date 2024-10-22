@@ -8,11 +8,11 @@ using _AptekFarma.Context;
 
 #nullable disable
 
-namespace _AptekFarma.Migrations
+namespace AptekFarma.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240910105021_UserLoginUpdate")]
-    partial class UserLoginUpdate
+    [Migration("20241022073346_firstMigration")]
+    partial class firstMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

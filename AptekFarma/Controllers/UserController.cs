@@ -24,24 +24,16 @@ namespace _AptekFarma.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
+        private readonly RoleManager<Roles> _roleManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AppDbContext _context;
         private readonly SignInManager<User> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly IPasswordHasher<User> _passwordHasher;
 
-
-
-        //public UserController(UserManager<User> userManager, IHttpContextAccessor httpContextAccessor, AppDbContext context, SignInManager<IdentityUser> signInManager)
-        //{
-        //    _userManager = userManager;
-        //    _httpContextAccessor = httpContextAccessor;
-        //    _context = context;
-        //    _signInManager = signInManager;
-        //}
-
         public UserController(
             UserManager<User> userManager,
+            RoleManager<Roles> roleManager,
             SignInManager<User> signInManager,
             IHttpContextAccessor httpContextAccessor,
             AppDbContext context,
@@ -49,6 +41,7 @@ namespace _AptekFarma.Controllers
             IPasswordHasher<User> passwordHasher)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
             _signInManager = signInManager;
             _httpContextAccessor = httpContextAccessor;
             _context = context;
@@ -68,11 +61,11 @@ namespace _AptekFarma.Controllers
                 nif = dto.Nif,
                 fecha_nacimiento = dto.FechaNacimiento.ToString(),
                 Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber,
-                rol = dto.rol
+                PhoneNumber = dto.PhoneNumber
             };
 
             await _userManager.CreateAsync(user, dto.Password);
+            await _userManager.AddToRoleAsync(user, dto.rol);
 
             await _context.SaveChangesAsync();
 
@@ -103,7 +96,8 @@ namespace _AptekFarma.Controllers
                 {
 
                     var Token = GenerateJwtToken(user);
-                    return Ok(new { Token.Result, user.rol, user.Id });
+                    var rol = await _userManager.GetRolesAsync(user);
+                    return Ok(new { Token.Result, rol, user.Id });
 
                 }
 
@@ -137,7 +131,7 @@ namespace _AptekFarma.Controllers
                 user.Apellidos = item.apellidos;
                 user.PhoneNumber = item.PhoneNumber;
                 user.FechaNacimiento = item.fecha_nacimiento;
-                user.rol = item.rol;
+                user.rol = _userManager.GetRolesAsync(item).Result.FirstOrDefault();
                 result.Add(user);
             }
 
@@ -165,6 +159,7 @@ namespace _AptekFarma.Controllers
             user.Apellidos = usuario.apellidos;
             user.PhoneNumber = usuario.PhoneNumber;
             user.FechaNacimiento = usuario.fecha_nacimiento;
+            user.rol = _userManager.GetRolesAsync(usuario).Result.FirstOrDefault();
 
             return user;
         }
@@ -227,6 +222,23 @@ namespace _AptekFarma.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPost("CambiarRol")]
+        [Authorize]
+        public async Task<IActionResult> CambiarRol(string id, string rol)
+        {
+            var usuario = await _context.Users.FindAsync(id);
+            if (usuario == null)
+            {
+                return NotFound();
+            }
+
+            var roles = await _userManager.GetRolesAsync(usuario);
+            await _userManager.RemoveFromRolesAsync(usuario, roles);
+            await _userManager.AddToRoleAsync(usuario, rol);
+
+            return Ok();
         }
 
         private bool UsuarioExists(string id)
