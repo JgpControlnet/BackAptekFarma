@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptekFarma.Models
 {
-    public class Point
+    public class PointEarned
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

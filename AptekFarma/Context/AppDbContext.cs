@@ -16,7 +16,7 @@ namespace _AptekFarma.Context
         public DbSet<Campaigns> Campaigns { get; set; }
         public DbSet<Pharmacy> Pharmacies { get; set; }
         public DbSet<Sales> Sales { get; set; }
-        public DbSet<Point> Points { get; set; }
+        public DbSet<PointEarned> PointsEarned { get; set; }
         public DbSet<PointRedeemded> PointsRedeemded { get; set; }
 
     }

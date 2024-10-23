@@ -28,19 +28,20 @@ namespace _AptekFarma.Controllers
     public class SalesController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<User> _roleManager;
+        private readonly RoleManager<Roles> _roleManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
         public SalesController(
             UserManager<User> userManager,
-            RoleManager<User> roleManager,
+            RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
             AppDbContext context,
             IConfiguration configuration)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
             _httpContextAccessor = httpContextAccessor;
             _context = context;
             _configuration = configuration;
@@ -78,7 +79,8 @@ namespace _AptekFarma.Controllers
                 Cantidad = sale.Cantidad,
                 Seller = seller,
                 Fecha = DateTime.Now,
-                Campaign = campaign
+                Campaign = campaign,
+                Validated = false
             };
 
             _context.Sales.Add(newSale);
@@ -111,6 +113,8 @@ namespace _AptekFarma.Controllers
             saleToUpdate.Seller = seller;
             saleToUpdate.Campaign = campaign;
 
+            _context.Update(saleToUpdate);
+
             await _context.SaveChangesAsync();
 
             return Ok(saleToUpdate);
@@ -127,6 +131,44 @@ namespace _AptekFarma.Controllers
             }
 
             _context.Sales.Remove(sale);
+            await _context.SaveChangesAsync();
+
+            return Ok(sale);
+        }
+
+        [HttpPut("ValidateSale")]
+        public async Task<IActionResult> ValidateSale(int id)
+        {
+            var sale = await _context.Sales
+                .Include(sale => sale.Seller)
+                .Include(sale => sale.Campaign)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (sale == null)
+            {
+                return NotFound();
+            }
+
+            if (sale.Validated)
+            {
+                return BadRequest("Venta ya validada");
+            }
+
+            sale.Validated = true;
+
+            var user = sale.Seller;
+            var campaign = sale.Campaign;
+
+            user.Points += campaign.PonderacionPuntos * sale.Cantidad;
+            campaign.Nventas += 1;
+
+            var pointsEarned = new PointEarned();
+            pointsEarned.User = user;
+            pointsEarned.Points = campaign.PonderacionPuntos * sale.Cantidad;
+            pointsEarned.Fecha = DateTime.Now;
+
+            _context.PointsEarned.Add(pointsEarned);
+            _context.Update(sale);
             await _context.SaveChangesAsync();
 
             return Ok(sale);

@@ -68,8 +68,6 @@ namespace _AptekFarma.Controllers
             await _userManager.CreateAsync(user, dto.Password);
             await _userManager.AddToRoleAsync(user, dto.rol);
 
-            await _context.SaveChangesAsync();
-
             return Ok(new { Token = GenerateJwtToken(user) });
 
         }
@@ -98,6 +96,9 @@ namespace _AptekFarma.Controllers
 
                     var Token = GenerateJwtToken(user);
                     var rol = await _userManager.GetRolesAsync(user);
+                    user.RememberMe = model.RemembeMe;
+                    _context.Update(user);
+                    await _context.SaveChangesAsync();
                     return Ok(new { Token.Result, rol, user.Id });
 
                 }
@@ -275,6 +276,7 @@ namespace _AptekFarma.Controllers
     {
         public string Username { get; set; }
         public string Password { get; set; }
+        public bool RemembeMe { get; set; }
     }
 
     public class TokenResponse

@@ -27,14 +27,14 @@ namespace _AptekFarma.Controllers
     public class CampaignsController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<User> _roleManager;
+        private readonly RoleManager<Roles> _roleManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
         public CampaignsController(
             UserManager<User> userManager,
-            RoleManager<User> roleManager,
+            RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
             AppDbContext context,
             IConfiguration configuration)
@@ -87,11 +87,11 @@ namespace _AptekFarma.Controllers
         [HttpPost("AddCampaignsExcel")]
         public async Task<IActionResult> AddCampaignsExcel(IFormFile file)
         {
-            if (file == null || file.Length == 0)
+            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
             {
-                return Content("file not selected");
+                return BadRequest("Debe proporcionar un archivo .xlsx");
             }
-            
+
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             var campaigns = new List<Campaigns>();

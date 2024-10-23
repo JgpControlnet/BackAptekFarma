@@ -11,6 +11,6 @@ namespace AptekFarma.Models
         public string CodigoNacional { get; set; }
         public string Nombre { get; set; }
         public string Imagen { get; set; }
-        public double Precio { get; set; }
+        public int Precio { get; set; }
     }
 }
