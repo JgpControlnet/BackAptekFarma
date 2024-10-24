@@ -62,10 +62,8 @@ namespace _AptekFarma.Controllers
                 fecha_nacimiento = dto.FechaNacimiento.ToString(),
                 Email = dto.Email,
                 PhoneNumber = dto.PhoneNumber,
-<<<<<<< HEAD
-=======
                 Pharmacy = _context.Pharmacies.FirstOrDefault(p => p.Id == dto.PharmacyId)
->>>>>>> origin/CalculoPuntos
+
             };
 
             await _userManager.CreateAsync(user, dto.Password);
