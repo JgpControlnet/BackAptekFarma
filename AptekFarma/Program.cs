@@ -110,15 +110,20 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.RouteTemplate = "api/swagger/{documentName}/swagger.json";
+});
+
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/api/swagger/v1/swagger.json", "API AptekFarma");
+    c.RoutePrefix = "api/swagger";
+});
 
 app.UseSerilogRequestLogging();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
