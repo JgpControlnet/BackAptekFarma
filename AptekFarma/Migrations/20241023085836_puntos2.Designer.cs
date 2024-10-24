@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using _AptekFarma.Context;
 
@@ -10,9 +11,11 @@ using _AptekFarma.Context;
 namespace AptekFarma.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241023085836_puntos2")]
+    partial class puntos2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,7 +69,7 @@ namespace AptekFarma.Migrations
                     b.ToTable("Pharmacies");
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.PointEarned", b =>
+            modelBuilder.Entity("AptekFarma.Models.Point", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -85,7 +88,7 @@ namespace AptekFarma.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("PointsEarned");
+                    b.ToTable("Points");
                 });
 
             modelBuilder.Entity("AptekFarma.Models.PointRedeemded", b =>
@@ -133,8 +136,8 @@ namespace AptekFarma.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("Precio")
-                        .HasColumnType("int");
+                    b.Property<double>("Precio")
+                        .HasColumnType("double");
 
                     b.HasKey("Id");
 
@@ -395,7 +398,7 @@ namespace AptekFarma.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.PointEarned", b =>
+            modelBuilder.Entity("AptekFarma.Models.Point", b =>
                 {
                     b.HasOne("_AptekFarma.Models.User", "User")
                         .WithMany()

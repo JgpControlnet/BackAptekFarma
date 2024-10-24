@@ -27,17 +27,20 @@ namespace _AptekFarma.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
+        private readonly RoleManager<Roles> _roleManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
         public ProductsController(
             UserManager<User> userManager,
+            RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
             AppDbContext context,
             IConfiguration configuration)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
             _httpContextAccessor = httpContextAccessor;
             _context = context;
             _configuration = configuration;
@@ -84,9 +87,9 @@ namespace _AptekFarma.Controllers
         [HttpPost("AddProductsExcel")]
         public async Task<IActionResult> AddProductsExcel(IFormFile file)
         {
-            if (file == null || file.Length == 0)
+            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
             {
-                return BadRequest("Debe proporcionar un archivo Excel.");
+                return BadRequest("Debe proporcionar un archivo .xlsx");
             }
 
             var products = new List<Products>();
@@ -110,7 +113,7 @@ namespace _AptekFarma.Controllers
                             CodigoNacional = worksheet.Cells[row, 1]?.Text?.Trim(),
                             Nombre = worksheet.Cells[row, 2]?.Text?.Trim(),
                             Imagen = worksheet.Cells[row, 3]?.Text?.Trim(),
-                            Precio = double.TryParse(worksheet.Cells[row, 4]?.Text, out double precio) ? precio : 0
+                            Precio = int.TryParse(worksheet.Cells[row, 4]?.Text, out int precio) ? precio : 0
                         });
                     }
                 }

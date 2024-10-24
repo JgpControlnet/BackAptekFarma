@@ -62,12 +62,14 @@ namespace _AptekFarma.Controllers
                 fecha_nacimiento = dto.FechaNacimiento.ToString(),
                 Email = dto.Email,
                 PhoneNumber = dto.PhoneNumber,
+<<<<<<< HEAD
+=======
+                Pharmacy = _context.Pharmacies.FirstOrDefault(p => p.Id == dto.PharmacyId)
+>>>>>>> origin/CalculoPuntos
             };
 
             await _userManager.CreateAsync(user, dto.Password);
             await _userManager.AddToRoleAsync(user, dto.rol);
-
-            await _context.SaveChangesAsync();
 
             return Ok(new { Token = GenerateJwtToken(user) });
 
@@ -97,6 +99,9 @@ namespace _AptekFarma.Controllers
 
                     var Token = GenerateJwtToken(user);
                     var rol = await _userManager.GetRolesAsync(user);
+                    user.RememberMe = model.RemembeMe;
+                    _context.Update(user);
+                    await _context.SaveChangesAsync();
                     return Ok(new { Token.Result, rol, user.Id });
 
                 }
@@ -110,8 +115,6 @@ namespace _AptekFarma.Controllers
             // Return failed login response
             return BadRequest(new { success = false, error = "La solicitud no fue exitosa." });
         }
-     
-
 
         // GET: api/Usuarios
         [HttpGet("ListUsuario")]
@@ -138,7 +141,7 @@ namespace _AptekFarma.Controllers
             return result;
         }
 
-        // GET: api/Usuarios/5
+        // GET: api/Usuarios/string
         [HttpGet("Usuario")]
         [Authorize]
         public async Task<ActionResult<UserDTO>> GetUsuario(string id)
@@ -276,6 +279,7 @@ namespace _AptekFarma.Controllers
     {
         public string Username { get; set; }
         public string Password { get; set; }
+        public bool RemembeMe { get; set; }
     }
 
     public class TokenResponse

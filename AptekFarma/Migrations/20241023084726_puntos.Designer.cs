@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using _AptekFarma.Context;
 
@@ -10,9 +11,11 @@ using _AptekFarma.Context;
 namespace AptekFarma.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241023084726_puntos")]
+    partial class puntos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,55 +69,6 @@ namespace AptekFarma.Migrations
                     b.ToTable("Pharmacies");
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.PointEarned", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserID")
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("PointsEarned");
-                });
-
-            modelBuilder.Entity("AptekFarma.Models.PointRedeemded", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductID")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserID")
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("PointsRedeemded");
-                });
-
             modelBuilder.Entity("AptekFarma.Models.Products", b =>
                 {
                     b.Property<int>("Id")
@@ -133,8 +87,8 @@ namespace AptekFarma.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("Precio")
-                        .HasColumnType("int");
+                    b.Property<double>("Precio")
+                        .HasColumnType("double");
 
                     b.HasKey("Id");
 
@@ -393,32 +347,6 @@ namespace AptekFarma.Migrations
                     b.HasIndex("PharmacyID");
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("AptekFarma.Models.PointEarned", b =>
-                {
-                    b.HasOne("_AptekFarma.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("AptekFarma.Models.PointRedeemded", b =>
-                {
-                    b.HasOne("AptekFarma.Models.Products", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("_AptekFarma.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID");
-
-                    b.Navigation("Product");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AptekFarma.Models.Sales", b =>
