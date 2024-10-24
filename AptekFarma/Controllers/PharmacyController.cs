@@ -56,6 +56,12 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetPharmacyById(int id)
         {
             var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (pharmacy == null)
+            {
+                return NotFound("No se ha encontrado Farmacia");
+            }
+
             return Ok(pharmacy);
         }
 
@@ -75,13 +81,13 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPut("UpdatePharmacy")]
-        public async Task<IActionResult> UpdatePharmacy(PharmacyDTO pharmacyDTO)
+        public async Task<IActionResult> UpdatePharmacy(int pharmacyId, [FromBody] PharmacyDTO pharmacyDTO)
         {
-            var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == pharmacyDTO.Id);
+            var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == pharmacyId);
 
             if (pharmacy == null)
             {
-                return NotFound();
+                return NotFound("No se ha encontrado Farmacia");
             }
 
             pharmacy.Nombre = pharmacyDTO.Nombre;
@@ -100,13 +106,13 @@ namespace _AptekFarma.Controllers
 
             if (pharmacy == null)
             {
-                return NotFound();
+                return NotFound("No se ha encontrado Farmacia");
             }
 
             _context.Pharmacies.Remove(pharmacy);
             await _context.SaveChangesAsync();
 
-            return Ok(pharmacy);
+            return Ok("Farmacia eliminda correctamente");
         }
 
         [HttpPost("ImportPharmaciesExcel")]
@@ -116,6 +122,8 @@ namespace _AptekFarma.Controllers
             {
                 return BadRequest("Debe proporcionar un archivo .xlsx");
             }
+
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             using (var stream = new MemoryStream())
             {
@@ -141,7 +149,7 @@ namespace _AptekFarma.Controllers
                 }
             }
 
-            return Ok();
+            return Ok("Importado Correctamente");
         }
     }
 }

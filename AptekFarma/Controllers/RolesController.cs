@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AptekFarma.Models;
 using OfficeOpenXml;
+using AptekFarma.DTO;
 
 
 namespace _AptekFarma.Controllers
@@ -61,7 +62,7 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPost("AddRole")]
-        public async Task<IActionResult> NewRol(Roles rol)
+        public async Task<IActionResult> NewRol(RoleDTO rol)
         {
             var roleExist = await _roleManager.RoleExistsAsync(rol.Name);
             if (!roleExist)
@@ -72,26 +73,32 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPut("UpdateRole")]
-        public async Task<IActionResult> UpdateRole(Roles rol)
+        public async Task<IActionResult> UpdateRole(string roleId, [FromBody] RoleDTO dto)
         {
-            var roleExist = await _roleManager.RoleExistsAsync(rol.Name);
-            if (roleExist)
+            var role = await _context.Roles.FirstOrDefaultAsync(x => x.Id == roleId);
+            if (role == null)
             {
-                await _roleManager.UpdateAsync(new Roles { Name = rol.Name });
+                return NotFound("Rol no encontrado");
             }
 
-            return Ok(rol);
+            role.Name = string.IsNullOrWhiteSpace(dto.Name) ? role.Name : dto.Name;
+            role.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? role.Descripcion : dto.Descripcion;
+
+            await _roleManager.UpdateAsync(role);
+            return Ok(role);
         }
 
         [HttpDelete("DeleteRole")]
         public async Task<IActionResult> DeleteRole(string id)
         {
-            var roleExist = await _roleManager.RoleExistsAsync(id);
-            if (roleExist)
+            var role = _context.Roles.FirstOrDefault(x => x.Id == id);
+
+            if (role == null)
             {
-                await _roleManager.DeleteAsync(new Roles { Id = id });
+                return NotFound("Rol no encontrado");
             }
 
+            await _roleManager.DeleteAsync(role);
             return Ok("Rol eliminado correctamente");
         }
 

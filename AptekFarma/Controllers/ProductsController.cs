@@ -57,20 +57,46 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetProductById(int id)
         {
             var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (product == null)
+            {
+                return NotFound("No se ha encontrado Producto");
+            }
+
             return Ok(product);
         }
 
         [HttpPost("AddProduct")]
-        public async Task<IActionResult> AddProduct([FromBody] Products product)
+        public async Task<IActionResult> AddProduct([FromBody] ProductDTO dto)
         {
+            var product = new Products
+            {
+                CodigoNacional = dto.CodigoNacional,
+                Nombre = dto.Nombre,
+                Imagen = dto.Imagen,
+                Precio = dto.Precio
+            };
+
             await _context.Products.AddAsync(product);
             await _context.SaveChangesAsync();
             return Ok(product);
         }
 
         [HttpPut("UpdateProduct")]
-        public async Task<IActionResult> UpdateProduct([FromBody] Products product)
+        public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductDTO dto)
         {
+            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == productId);
+
+            if (product == null)
+            {
+                return NotFound("No se ha encontrado Producto");
+            }
+
+            product.CodigoNacional = dto.CodigoNacional;
+            product.Nombre = dto.Nombre;
+            product.Imagen = dto.Imagen;
+            product.Precio = dto.Precio;
+
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
             return Ok(product);
@@ -80,10 +106,17 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (product == null)
+            {
+                return NotFound("No se ha encontrado Producto");
+            }
+
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok("Producto eliminado correctamente");
         }
+
         [HttpPost("AddProductsExcel")]
         public async Task<IActionResult> AddProductsExcel(IFormFile file)
         {
