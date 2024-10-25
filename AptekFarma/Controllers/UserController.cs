@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Humanizer;
+using AptekFarma.Models;
 
 
 namespace _AptekFarma.Controllers
@@ -103,12 +104,12 @@ namespace _AptekFarma.Controllers
                 if (result.Succeeded)
                 {
 
-                    var Token = GenerateJwtToken(user);
+                    var Token = await GenerateJwtAndRefreshToken(user);
                     var rol = await _userManager.GetRolesAsync(user);
                     user.RememberMe = model.RemembeMe;
                     _context.Update(user);
                     await _context.SaveChangesAsync();
-                    return Ok(new { Token.Result, rol, user.Id });
+                    return Ok(new { Token, rol, user.Id });
 
                 }
 
@@ -122,11 +123,59 @@ namespace _AptekFarma.Controllers
         // GET: api/Usuarios
         [HttpGet("ListUsuario")]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsuarios()
+        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsuarios([FromQuery] UserFilterDTO filtro)
         {
-            var users = await _context.Users.ToListAsync();
+            var users = await _context.Users.Include(x => x.Pharmacy).ToListAsync();
             List<UserDTO> result = new List<UserDTO>();
-            foreach (var item in users)
+
+            if (filtro != null)
+            {
+                if (filtro.UserName != null)
+                {
+                    users = users.Where(u => u.UserName.ToLower().Contains(filtro.UserName.ToLower())).ToList();
+                }
+                if (filtro.Email != null)
+                {
+                    users = users.Where(u => u.Email.ToLower().Contains(filtro.Email.ToLower())).ToList();
+                }
+                if (filtro.PhoneNumber != null)
+                {
+                    users = users.Where(u => u.PhoneNumber.Contains(filtro.PhoneNumber)).ToList();
+                }
+                if (filtro.Nombre != null)
+                {
+                    users = users.Where(u => u.nombre.ToLower().Contains(filtro.Nombre.ToLower())).ToList();
+                }
+                if (filtro.Apellidos != null)
+                {
+                    users = users.Where(u => u.apellidos.ToLower().Contains(filtro.Apellidos.ToLower())).ToList();
+                }
+                if (filtro.Nif != null)
+                {
+                    users = users.Where(u => u.nif.ToLower().Contains(filtro.Nif.ToLower())).ToList();
+                }
+                if (filtro.FechaNacimiento != null)
+                {
+                    users = users.Where(u => u.fecha_nacimiento.Contains(filtro.FechaNacimiento)).ToList();
+                }
+                if (filtro.rol != null)
+                {
+                    users = users.Where(u => _userManager.GetRolesAsync(u).Result.Contains(filtro.rol)).ToList();
+                }
+                if (filtro.PharmacyId != 0)
+                {
+                    users = users.Where(u => u.Pharmacy.Id == filtro.PharmacyId).ToList();
+                }
+
+            }   
+            // Paginación
+            int totalItems = users.Count;
+            var paginatedUsers = users
+                .Skip((filtro.PageNumber - 1) * filtro.PageSize)
+                .Take(filtro.PageSize)
+                .ToList();
+
+            foreach (var item in paginatedUsers)
             {
                 var user = new UserDTO();
                 user.UserName = item.UserName;
@@ -137,10 +186,21 @@ namespace _AptekFarma.Controllers
                 user.PhoneNumber = item.PhoneNumber;
                 user.FechaNacimiento = item.fecha_nacimiento;
                 user.rol = _userManager.GetRolesAsync(item).Result.FirstOrDefault();
+                user.PharmacyId = item.Pharmacy.Id;
+                user.Points = item.Points;
                 result.Add(user);
             }
 
-            return result;
+            var response = new
+            {
+                TotalItems = totalItems,
+                PageNumber = filtro.PageNumber,
+                PageSize = filtro.PageSize,
+                TotalPages = (int)Math.Ceiling(totalItems / (double)filtro.PageSize),
+                Items = result
+            };
+
+            return Ok(response);
         }
 
         // GET: api/Usuarios/string
@@ -273,7 +333,7 @@ namespace _AptekFarma.Controllers
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Issuer"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(30),
+                expires: DateTime.Now.AddHours(24),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
@@ -367,6 +427,109 @@ namespace _AptekFarma.Controllers
             return "ok";
         }
 
+        private async Task<AuthResult> GenerateJwtAndRefreshToken(IdentityUser user)
+        {
+            var jwtToken = GenerateJwtToken(user);  // El método que ya tienes para generar el JWT token
+
+            // Generar Refresh Token
+            var refreshToken = GenerateRefreshToken();
+
+            // Guardar el Refresh Token en la base de datos o un almacén seguro
+            await SaveRefreshToken(user, refreshToken);
+
+            return new AuthResult
+            {
+                Token = await jwtToken,
+                RefreshToken = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddHours(24) // Caducidad corta para el JWT Token
+            };
+        }
+
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+                return Convert.ToBase64String(randomNumber);
+            }
+        }
+
+        private async Task SaveRefreshToken(IdentityUser user, string refreshToken)
+        {
+            var token = new RefreshToken
+            {
+                Token = refreshToken,
+                UserId = user.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)  // Caducidad del Refresh Token
+            };
+
+            // Guardar en base de datos
+            _context.RefreshTokens.Add(token);
+            await _context.SaveChangesAsync();
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] TokenRequest tokenRequest)
+        {
+            var userId = GetUserIdFromExpiredToken(tokenRequest.Token);
+            if (userId == null)
+            {
+                return BadRequest(new { message = "Token inválido" });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !await ValidateRefreshToken(user, tokenRequest.RefreshToken))
+            {
+                return BadRequest(new { message = "Refresh Token inválido o ha expirado" });
+            }
+
+            var result = await GenerateJwtAndRefreshToken(user);  // Genera nuevos tokens
+            return Ok(result);
+        }
+
+        private string GetUserIdFromExpiredToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = false // Deshabilitamos la validación de la caducidad
+                }, out SecurityToken securityToken);
+
+                var jwtToken = securityToken as JwtSecurityToken;
+                if (jwtToken == null || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new SecurityTokenException("Token inválido");
+                }
+
+                return principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+            catch
+            {
+                return null;  // Token inválido
+            }
+        }
+
+        private async Task<bool> ValidateRefreshToken(IdentityUser user, string refreshToken)
+        {
+            var storedToken = await _context.RefreshTokens
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken && rt.UserId == user.Id);
+            if (storedToken == null || storedToken.ExpiresAt < DateTime.UtcNow)
+            {
+                return false;  // Refresh Token inválido o ha expirado
+            }
+
+            return true;
+        }
+
 
     }
 
@@ -383,6 +546,19 @@ namespace _AptekFarma.Controllers
         public string TokenType { get; set; }
         public string AccessToken { get; set; }
         public int ExpiresIn { get; set; }
+        public string RefreshToken { get; set; }
+    }
+
+    public class AuthResult
+    {
+        public string Token { get; set; }            // JWT Token
+        public string RefreshToken { get; set; }     // Refresh Token
+        public DateTime ExpiresAt { get; set; }      // Fecha de expiración del JWT
+    }
+
+    public class TokenRequest
+    {
+        public string Token { get; set; }
         public string RefreshToken { get; set; }
     }
 

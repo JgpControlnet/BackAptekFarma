@@ -47,10 +47,36 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpGet("GetAllProducts")]
-        public async Task<IActionResult> GetProducts()
+        public async Task<IActionResult> GetProducts([FromQuery] ProductFilterDTO filtro)
         {
             var products = await _context.Products.ToListAsync();
-            return Ok(products);
+
+            if (filtro != null)
+            {
+                if (!string.IsNullOrEmpty(filtro.CodigoNacional))
+                {
+                    products = products.Where(x => x.CodigoNacional.ToLower().Contains(filtro.CodigoNacional.ToLower())).ToList();
+                }
+
+                if (!string.IsNullOrEmpty(filtro.Nombre))
+                {
+                    products = products.Where(x => x.Nombre.ToLower().Contains(filtro.Nombre.ToLower())).ToList();
+                }
+
+                if (filtro.Precio > 0)
+                {
+                    products = products.Where(x => x.Precio == filtro.Precio).ToList();
+                }
+            }
+
+            // Paginación
+            int totalItems = products.Count;
+            var paginatedProducts = products
+                .Skip((filtro.PageNumber - 1) * filtro.PageSize)
+                .Take(filtro.PageSize)
+                .ToList();
+
+            return Ok(paginatedProducts);
         }
 
         [HttpGet("GetProductById")]

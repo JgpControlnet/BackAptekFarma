@@ -21,7 +21,7 @@ using OfficeOpenXml;
 
 namespace _AptekFarma.Controllers
 {
-    [Route("/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class PointsController : ControllerBase
