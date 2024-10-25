@@ -55,21 +55,48 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetCampaignById(int id)
         {
             var campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (campaign == null)
+            {
+                return NotFound("No se ha encontrado campaña");
+            }
+
             return Ok(campaign);
         }
 
         [HttpPost("AddCampaign")]
-        public async Task<IActionResult> AddCampaign(Campaigns campaign)
+        public async Task<IActionResult> AddCampaign(CampaignDTO campaign)
         {
-            await _context.Campaigns.AddAsync(campaign);
+            var newCampaign = new Campaigns
+            {
+                CodigoNacional = campaign.CodigoNacional,
+                Referencia = campaign.Referencia,
+                Nventas = campaign.Nventas,
+                PonderacionPuntos = campaign.PonderacionPuntos,
+                FechaCaducidad = campaign.FechaCaducidad
+            };
+            await _context.Campaigns.AddAsync(newCampaign);
             await _context.SaveChangesAsync();
             return Ok(campaign);
         }
 
         [HttpPut("UpdateCampaign")]
-        public async Task<IActionResult> UpdateCampaign(Campaigns campaign)
+        public async Task<IActionResult> UpdateCampaign(int CampaignId, [FromBody] CampaignDTO campaign)
         {
-            _context.Campaigns.Update(campaign);
+            var campaignToUpdate = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == CampaignId);
+
+            if (campaignToUpdate == null)
+            {
+                return NotFound("No se ha encontrado campaña");
+            }   
+
+            campaignToUpdate.CodigoNacional = campaign.CodigoNacional;
+            campaignToUpdate.Referencia = campaign.Referencia;
+            campaignToUpdate.Nventas = campaign.Nventas;
+            campaignToUpdate.PonderacionPuntos = campaign.PonderacionPuntos;
+            campaignToUpdate.FechaCaducidad = campaign.FechaCaducidad;
+
+            _context.Campaigns.Update(campaignToUpdate);
             await _context.SaveChangesAsync();
             return Ok(campaign);
         }
@@ -78,9 +105,15 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> DeleteCampaign(int id)
         {
             var campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == id);
+
+            if (campaign == null)
+            {
+                return NotFound("No se ha encontrado campaña");
+            }
+
             _context.Campaigns.Remove(campaign);
             await _context.SaveChangesAsync();
-            return Ok(campaign);
+            return Ok("Campaña borrada correctamente");
         }
 
         [HttpPost("AddCampaignsExcel")]

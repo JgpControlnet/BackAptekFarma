@@ -15,6 +15,8 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
+using Humanizer;
 
 
 namespace _AptekFarma.Controllers
@@ -53,6 +55,12 @@ namespace _AptekFarma.Controllers
         [HttpPost("registro")]
         public async Task<IActionResult> registro([FromBody] RegisterDTO dto)
         {
+            var validation = ValidationsUserRegister(dto);
+            if (validation != "ok")
+            {
+                return BadRequest(validation);
+            }
+
             var user = new User
             {
                 UserName = dto.UserName,
@@ -104,9 +112,6 @@ namespace _AptekFarma.Controllers
 
                 }
 
-
-
-
                 return BadRequest(new { success = false, error = "La solicitud no fue exitosa." });
             }
 
@@ -124,7 +129,6 @@ namespace _AptekFarma.Controllers
             foreach (var item in users)
             {
                 var user = new UserDTO();
-                user.Id = item.Id;
                 user.UserName = item.UserName;
                 user.Email = item.Email;
                 user.Nif = item.nif;
@@ -152,7 +156,6 @@ namespace _AptekFarma.Controllers
             }
 
             var user = new UserDTO();
-            user.Id = usuario.Id;
             user.UserName = usuario.UserName;
             user.Email = usuario.Email;
             user.Nif = usuario.nif;
@@ -168,14 +171,20 @@ namespace _AptekFarma.Controllers
         // PUT: api/Usuarios/5
         [HttpPut("ModificarUsuario")]
         [Authorize]
-        public async Task<IActionResult> PutUsuario(UserDTO dto)
+        public async Task<IActionResult> PutUsuario(string userId, [FromBody] UserDTO dto)
         {
-            if (dto.Id == "")
+            if (userId == "")
             {
-                return BadRequest();
+                return BadRequest("Debes seleccionar el usuario a modificar");
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.Id);
+            var validation = ValidationsUser(dto);
+            if (validation != "ok")
+            {
+                return BadRequest(validation);
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
             {
@@ -189,6 +198,7 @@ namespace _AptekFarma.Controllers
             user.apellidos = dto.Apellidos != "" && dto.Apellidos != "string" ? dto.Apellidos : user.apellidos;
             user.nif = dto.Nif != "" && dto.Nif != "string" ? dto.Nif : user.nif;
             user.fecha_nacimiento = dto.FechaNacimiento != "" && dto.FechaNacimiento != "string" ? dto.FechaNacimiento : user.fecha_nacimiento;
+
 
             _context.Users.Update(user);
 
@@ -267,6 +277,94 @@ namespace _AptekFarma.Controllers
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private string ValidationsUserRegister(RegisterDTO dto)
+        {
+            if (dto == null)
+            {
+                return "No puede enviar el formulario vacio";
+            }
+
+            if (dto.rol != "Admin" && dto.rol != "Farma")
+            {
+                return "El rol debe ser 'Admin' o 'Farma'.";
+            }
+
+            string patternEmail = @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$";
+            Match matchEmail = Regex.Match(dto.Email, patternEmail);
+            if (!matchEmail.Success)
+            {
+                return "Email no valido";
+            }
+
+            string patternNif = @"^(\d{8})([A-Za-z])$";
+            Match matchNif = Regex.Match(dto.Nif, patternNif);
+            if (!matchNif.Success)
+            {
+                return "Nif no valido";
+            }
+
+            string patternPwd = @"^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,15}$";
+            Match matchPwd = Regex.Match(dto.Password, patternPwd);
+            if (!matchPwd.Success)
+            {
+                return "Contraseña no valida. (Debe tener 8 caracteres con al menos 1 digito, 1 letra minuscula, 1 letra mayuscula)";
+            }
+
+            string patternPhone = @"^(\+34|0034|34)?[6|7|9][0-9]{8}$";
+            Match matchPhone = Regex.Match(dto.PhoneNumber, patternPhone);
+            if (!matchPhone.Success)
+            {
+                return "Telefono no valido";
+            }
+
+            if (dto.PharmacyId == 0)
+            {
+                return "Debes seleccinar una farmacia valida";
+            }
+
+            return "ok";
+        }
+        private string ValidationsUser(UserDTO dto)
+        {
+            if (dto == null)
+            {
+                return "No puede enviar el formulario vacio";
+            }
+
+            if (dto.rol != "Admin" && dto.rol != "Farma")
+            {
+                return "El rol debe ser 'Admin' o 'Farma'.";
+            }
+
+            string patternEmail = @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$";
+            Match matchEmail = Regex.Match(dto.Email, patternEmail);
+            if (!matchEmail.Success)
+            {
+                return "Email no valido";
+            }
+
+            string patternNif = @"^(\d{8})([A-Za-z])$";
+            Match matchNif = Regex.Match(dto.Nif, patternNif);
+            if (!matchNif.Success)
+            {
+                return "Nif no valido";
+            }
+
+            string patternPhone = @"^(\+34|0034|34)?[6|7|9][0-9]{8}$";
+            Match matchPhone = Regex.Match(dto.PhoneNumber, patternPhone);
+            if (!matchPhone.Success)
+            {
+                return "Telefono no valido";
+            }
+
+            if (dto.PharmacyId == 0)
+            {
+                return "Debes seleccinar una farmacia valida";
+            }
+
+            return "ok";
         }
 
 

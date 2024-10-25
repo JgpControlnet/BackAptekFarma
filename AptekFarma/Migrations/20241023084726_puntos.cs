@@ -10,19 +10,26 @@ namespace AptekFarma.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            //migrationBuilder.AddColumn<int>(
+            //    name: "Points",
+            //    table: "AspNetUsers",
+            //    type: "int",
+            //    nullable: false,
+            //    defaultValue: 0);
+
+            //migrationBuilder.AddColumn<bool>(
+            //    name: "RememberMe",
+            //    table: "AspNetUsers",
+            //    type: "tinyint(1)",
+            //    nullable: false,
+            //    defaultValue: false);
+
             migrationBuilder.AddColumn<int>(
-                name: "Points",
-                table: "AspNetUsers",
+                name: "CampaignID",
+                table: "Sales",
                 type: "int",
                 nullable: false,
                 defaultValue: 0);
-
-            migrationBuilder.AddColumn<bool>(
-                name: "RememberMe",
-                table: "AspNetUsers",
-                type: "tinyint(1)",
-                nullable: false,
-                defaultValue: false);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sales_CampaignID",
