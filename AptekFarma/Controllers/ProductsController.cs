@@ -86,10 +86,14 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductDTO dto)
         {
             var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == productId);
+            var error = new
+            {
+                Error = "No se ha encontrado Producto"
+            };
 
             if (product == null)
             {
-                return NotFound("No se ha encontrado Producto");
+                return NotFound(error);
             }
 
             product.CodigoNacional = dto.CodigoNacional;
