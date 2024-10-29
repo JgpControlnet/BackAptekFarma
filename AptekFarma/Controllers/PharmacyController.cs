@@ -21,7 +21,7 @@ using OfficeOpenXml;
 
 namespace _AptekFarma.Controllers
 {
-    [Route("/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class PharmacyController : ControllerBase
@@ -46,10 +46,31 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpGet("GetAllPharmacies")]
-        public async Task<IActionResult> GetPharmacies()
+        public async Task<IActionResult> GetPharmacies([FromQuery] PharmacyFilterDTO filtro)
         {
             var pharmacies = await _context.Pharmacies.ToListAsync();
-            return Ok(pharmacies);
+
+            if (filtro != null)
+            {
+                if (!string.IsNullOrEmpty(filtro.Nombre))
+                {
+                    pharmacies = pharmacies.Where(x => x.Nombre.ToLower().Contains(filtro.Nombre.ToLower())).ToList();
+                }
+
+                if (!string.IsNullOrEmpty(filtro.Direccion))
+                {
+                    pharmacies = pharmacies.Where(x => x.Direccion.ToLower().Contains(filtro.Direccion.ToLower())).ToList();
+                }
+            }
+
+            // Paginación
+            int totalItems = pharmacies.Count;
+            var paginatedPharmacies = pharmacies
+                .Skip((filtro.PageNumber - 1) * filtro.PageSize)
+                .Take(filtro.PageSize)
+                .ToList();
+
+            return Ok(paginatedPharmacies);
         }
 
         [HttpGet("GetPharmacyById")]

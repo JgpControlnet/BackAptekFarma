@@ -22,7 +22,7 @@ using AptekFarma.DTO;
 
 namespace _AptekFarma.Controllers
 {
-    [Route("/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class SalesController : ControllerBase
@@ -48,15 +48,47 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpGet("GetAllSales")]
-        public async Task<IActionResult> GetSales()
+        public async Task<IActionResult> GetSales([FromQuery] SalesFilterDTO filtro)
         {
             var sales = await _context.Sales
                 .Include(sale => sale.Product)
                 .Include(sale => sale.Seller)
                 .Include(sale => sale.Campaign)
                 .ToListAsync();
+
             var salesResponse = new List<object>();
-            foreach (var sale in sales)
+
+            if (filtro != null)
+            {
+                if (filtro.ProductoId != 0)
+                {
+                    sales = sales.Where(x => x.Product.Id == filtro.ProductoId).ToList();
+                }
+
+                if (filtro.Cantidad != 0)
+                {
+                    sales = sales.Where(x => x.Cantidad == filtro.Cantidad).ToList();
+                }
+
+                if (filtro.CampaignId != 0)
+                {
+                    sales = sales.Where(x => x.Campaign.Id == filtro.CampaignId).ToList();
+                }
+
+                if (filtro.VendedorId != "")
+                {
+                    sales = sales.Where(x => x.Seller.Id == filtro.VendedorId).ToList();
+                }
+            }
+
+            // Paginación
+            int totalItems = sales.Count;
+            var paginatedSales = sales
+                .Skip((filtro.PageNumber - 1) * filtro.PageSize)
+                .Take(filtro.PageSize)
+                .ToList();
+
+            foreach (var sale in paginatedSales)
             {
                 var response = new
                 {
