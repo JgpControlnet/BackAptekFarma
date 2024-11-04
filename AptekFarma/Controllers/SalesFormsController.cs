@@ -200,16 +200,16 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPost("CreateSale")]
-        public async Task<IActionResult> CreateSale(SalesDTO sale)
+        public async Task<IActionResult> CreateSale(SalesFormFilterDTO saleForm)
         {
-            var campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == sale.CampaignId);
+            var sale = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == saleForm.SaleId);
 
-            if (campaign == null)
+            if (sale == null)
             {
-                return BadRequest("No se encuentra campaña");
+                return BadRequest("No se encuentra venta");
             }
 
-            var newSale = new Sale
+            var newSaleForm = new SaleForm
             {
                 CodigoNacional = sale.CodigoNacional,
                 Referencia = sale.Referencia,
@@ -223,19 +223,41 @@ namespace _AptekFarma.Controllers
 
             var response = new
             {
-                newSale.Id,
-                newSale.CodigoNacional,
-                newSale.Referencia,
-                NumeroVentas = newSale.Nventas,
-                newSale.PonderacionPuntos,
-                Campaign = new
+                Id = sale.Id,
+                Product = new
                 {
-                    newSale.Campaign.Id,
-                    newSale.Campaign.Nombre,
-                    newSale.Campaign.Descripcion,
-                    newSale.Campaign.FechaCaducidad
-                }
+                    CodigoNacional = sale.Product.CodigoNacional,
+                    Nombre = sale.Product.Nombre,
+                    Imagen = sale.Product.Imagen,
+                    Precio = sale.Product.Precio
+                },
+                Cantidad = sale.Cantidad,
+                Seller = new
+                {
+                    Id = sale.Seller.Id,
+                    UserName = sale.Seller.UserName,
+                    Email = sale.Seller.Email,
+                    Points = sale.Seller.Points
+                },
+                Fecha = sale.Fecha,
+                Sale = new
+                {
+                    Id = sale.Sale.Id,
+                    CodigoNacional = sale.Sale.CodigoNacional,
+                    Referencia = sale.Sale.Referencia,
+                    PonderacionPuntos = sale.Sale.PonderacionPuntos,
+                    Nventas = sale.Sale.Nventas,
+                    Campaign = new
+                    {
+                        Id = sale.Sale.Campaign.Id,
+                        Nombre = sale.Sale.Campaign.Nombre,
+                        Descripcion = sale.Sale.Campaign.Descripcion,
+                        FechaCaducidad = sale.Sale.Campaign.FechaCaducidad
+                    }
+                },
+                Validated = sale.Validated
             };
+
 
             return Ok(response);
         }
