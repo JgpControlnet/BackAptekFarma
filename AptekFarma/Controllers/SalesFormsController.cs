@@ -25,7 +25,7 @@ namespace _AptekFarma.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class SalesController : ControllerBase
+    public class SalesFormController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Roles> _roleManager;
@@ -33,7 +33,7 @@ namespace _AptekFarma.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-        public SalesController(
+        public SalesFormController(
             UserManager<User> userManager,
             RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
@@ -47,46 +47,53 @@ namespace _AptekFarma.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet("GetAllSales")]
-        public async Task<IActionResult> GetSales([FromQuery] SalesFilterDTO filtro)
+        [HttpGet("GetAllSalesForm")]
+        public async Task<IActionResult> GetSalesForms([FromQuery] SalesFormFilterDTO filtro)
         {
-            var sales = await _context.Sales
-                .Include(sale => sale.Campaign)
+            var salesForms = await _context.SalesForms
+                .Include(sale => sale.Product)
+                .Include(sale => sale.Seller)
+                .Include(sale => sale.Sale)
                 .ToListAsync();
 
             var salesResponse = new List<object>();
 
             if (filtro != null)
             {
-                if (!string.IsNullOrEmpty(filtro.CodigoNacional))
+                if(filtro.ProductId != 0)
                 {
-                    sales = sales.Where(x => x.CodigoNacional == filtro.CodigoNacional).ToList();
+                    salesForms = salesForms.Where(x => x.Product.Id == filtro.ProductId).ToList();
                 }
 
-                if (!string.IsNullOrEmpty(filtro.Referencia))
+                if (filtro.Cantidad != 0)
                 {
-                    sales = sales.Where(x => x.Referencia == filtro.Referencia).ToList();
+                    salesForms = salesForms.Where(x => x.Cantidad == filtro.Cantidad).ToList();
                 }
 
-                if (filtro.Nventas != 0)
+                if (!string.IsNullOrEmpty(filtro.SellerId))
                 {
-                    sales = sales.Where(x => x.Nventas == filtro.Nventas).ToList();
+                    salesForms = salesForms.Where(x => x.Seller.Id == filtro.SellerId).ToList();
                 }
 
-                if (filtro.PonderacionPuntos != 0)
+                //if (filtro.Fecha != null)
+                //{
+                //    salesForms = salesForms.Where(x => x.Fecha == filtro.Fecha).ToList();
+                //}
+
+                if (filtro.SaleId != 0)
                 {
-                    sales = sales.Where(x => x.PonderacionPuntos >= filtro.PonderacionPuntos).ToList();
+                    salesForms = salesForms.Where(x => x.Sale.Id == filtro.SaleId).ToList();
                 }
 
-                if (filtro.CampaignId != 0)
+                if (filtro.Validated)
                 {
-                    sales = sales.Where(x => x.Campaign.Id == filtro.CampaignId).ToList();
+                    salesForms = salesForms.Where(x => x.Validated == filtro.Validated).ToList();
                 }
             }
 
             // Paginación
-            int totalItems = sales.Count;
-            var paginatedSales = sales
+            int totalItems = salesForms.Count;
+            var paginatedSales = salesForms
                 .Skip((filtro.PageNumber - 1) * filtro.PageSize)
                 .Take(filtro.PageSize)
                 .ToList();
@@ -95,18 +102,39 @@ namespace _AptekFarma.Controllers
             {
                 var response = new
                 {
-                    sale.Id,
-                    sale.CodigoNacional,
-                    sale.Referencia,
-                    NumeroVentas = sale.Nventas,
-                    sale.PonderacionPuntos,
-                    Campaign = new
+                    Id = sale.Id,
+                    Product = new
                     {
-                        sale.Campaign.Id,
-                        sale.Campaign.Nombre,
-                        sale.Campaign.Descripcion,
-                        sale.Campaign.FechaCaducidad
-                    }
+                        CodigoNacional = sale.Product.CodigoNacional,
+                        Nombre = sale.Product.Nombre,
+                        Imagen = sale.Product.Imagen,
+                        Precio = sale.Product.Precio
+                    },
+                    Cantidad = sale.Cantidad,
+                    Seller = new
+                    {
+                        Id = sale.Seller.Id,
+                        UserName = sale.Seller.UserName,
+                        Email = sale.Seller.Email,
+                        Points = sale.Seller.Points
+                    },
+                    Fecha = sale.Fecha,
+                    Sale = new
+                    {
+                        Id = sale.Sale.Id,
+                        CodigoNacional = sale.Sale.CodigoNacional,
+                        Referencia = sale.Sale.Referencia,
+                        PonderacionPuntos = sale.Sale.PonderacionPuntos,
+                        Nventas = sale.Sale.Nventas,
+                        Campaign = new
+                        {
+                            Id = sale.Sale.Campaign.Id,
+                            Nombre = sale.Sale.Campaign.Nombre,
+                            Descripcion = sale.Sale.Campaign.Descripcion,
+                            FechaCaducidad = sale.Sale.Campaign.FechaCaducidad
+                        }
+                    },
+                    Validated = sale.Validated
                 };
 
                 salesResponse.Add(response);
@@ -119,30 +147,54 @@ namespace _AptekFarma.Controllers
         [HttpGet("GetSaleById")]
         public async Task<IActionResult> GetSaleById(int id)
         {
-            var sale = await _context.Sales
-                .Include(sale => sale.Campaign)
+            var saleForm = await _context.SalesForms
+                .Include(sale => sale.Product)
+                .Include(sale => sale.Seller)
+                .Include(sale => sale.Sale)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (sale == null)
+            if (saleForm == null)
             {
                 return NotFound("No se ha encontrado la venta");
             }
 
             var response = new
             {
-                sale.Id,
-                sale.CodigoNacional,
-                sale.Referencia,
-                NumeroVentas = sale.Nventas,
-                sale.PonderacionPuntos,
-                Campaign = new
+                Id = saleForm.Id,
+                Product = new
                 {
-                    sale.Campaign.Id,
-                    sale.Campaign.Nombre,
-                    sale.Campaign.Descripcion,
-                    sale.Campaign.FechaCaducidad
-                }
+                    CodigoNacional = saleForm.Product.CodigoNacional,
+                    Nombre = saleForm.Product.Nombre,
+                    Imagen = saleForm.Product.Imagen,
+                    Precio = saleForm.Product.Precio
+                },
+                Cantidad = saleForm.Cantidad,
+                Seller = new
+                {
+                    Id = saleForm.Seller.Id,
+                    UserName = saleForm.Seller.UserName,
+                    Email = saleForm.Seller.Email,
+                    Points = saleForm.Seller.Points
+                },
+                Fecha = saleForm.Fecha,
+                Sale = new
+                {
+                    Id = saleForm.Sale.Id,
+                    CodigoNacional = saleForm.Sale.CodigoNacional,
+                    Referencia = saleForm.Sale.Referencia,
+                    PonderacionPuntos = saleForm.Sale.PonderacionPuntos,
+                    Nventas = saleForm.Sale.Nventas,
+                    Campaign = new
+                    {
+                        Id = saleForm.Sale.Campaign.Id,
+                        Nombre = saleForm.Sale.Campaign.Nombre,
+                        Descripcion = saleForm.Sale.Campaign.Descripcion,
+                        FechaCaducidad = saleForm.Sale.Campaign.FechaCaducidad
+                    }
+                },
+                Validated = saleForm.Validated
             };
+
 
             return Ok(response);
         }
@@ -291,29 +343,7 @@ namespace _AptekFarma.Controllers
                         return BadRequest($"Fecha inválida en la fila {row}");
                     }
 
-                    Campaign campaign = null;
 
-                    if (newCampaign)
-                    {
-                        campaign = new Campaign
-                        {
-                            Nombre = dto.Nombre,
-                            Descripcion = dto.Descripcion,
-                            FechaCaducidad = fechaCaducidad
-                        };
-
-                        await _context.Campaigns.AddAsync(campaign);
-                        await _context.SaveChangesAsync();
-                    }
-                    else
-                    {
-                        campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.FechaCaducidad == fechaCaducidad);
-
-                        if (campaign == null)
-                        {
-                            return BadRequest("No se encuentra campaña");
-                        }
-                    }
 
                     sales.Add(new Sale
                     {
@@ -321,7 +351,6 @@ namespace _AptekFarma.Controllers
                         Referencia = worksheet.Cells[row, 2].Value.ToString().Trim(),
                         Nventas = int.Parse(worksheet.Cells[row, 3].Value.ToString().Trim()),
                         PonderacionPuntos = int.Parse(worksheet.Cells[row, 4].Value.ToString().Trim()),
-                        Campaign = campaign
                     });
                 }
             }
@@ -331,7 +360,43 @@ namespace _AptekFarma.Controllers
             return Ok(sales);
         }
 
-        
+        [HttpPut("ValidateSale")]
+        public async Task<IActionResult> ValidateSale(int id)
+        {
+            var saleForm = await _context.SalesForms
+                .Include(sale => sale.Seller)
+                .Include(sale => sale.Sale)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (saleForm == null)
+            {
+                return NotFound();
+            }
+
+            if (saleForm.Validated)
+            {
+                return BadRequest("Venta ya validada");
+            }
+
+            saleForm.Validated = true;
+
+            var user = saleForm.Seller;
+            var sale = saleForm.Sale;
+
+            user.Points += sale.PonderacionPuntos * saleForm.Cantidad;
+            sale.Nventas += 1;
+
+            var pointsEarned = new PointEarned();
+            pointsEarned.User = user;
+            pointsEarned.Points = sale.PonderacionPuntos * saleForm.Cantidad;
+            pointsEarned.Fecha = DateTime.Now;
+
+            _context.PointsEarned.Add(pointsEarned);
+            _context.Update(saleForm);
+            await _context.SaveChangesAsync();
+
+            return Ok($"Venta {saleForm.Id} validada correctamente");
+        }
 
     }
 }

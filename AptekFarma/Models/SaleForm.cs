@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptekFarma.Models
 {
-    public class Sales
+    public class SaleForm
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -16,7 +16,7 @@ namespace AptekFarma.Models
         public User Seller { get; set; }
         public DateTime Fecha { get; set; }
         [ForeignKey("CampaignID")]
-        public Campaigns Campaign { get; set; }
+        public Sale Sale { get; set; }
         public bool Validated { get; set; }
 
     }
