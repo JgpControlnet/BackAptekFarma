@@ -19,26 +19,19 @@ namespace AptekFarma.Migrations
                 .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("AptekFarma.Models.Campaigns", b =>
+            modelBuilder.Entity("AptekFarma.Models.Campaign", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<string>("CodigoNacional")
-                        .IsRequired()
+                    b.Property<string>("Descripcion")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("FechaCaducidad")
+                    b.Property<DateTime?>("FechaCaducidad")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("Nventas")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PonderacionPuntos")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Referencia")
+                    b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("longtext");
 
@@ -79,6 +72,7 @@ namespace AptekFarma.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("UserID")
+                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
@@ -104,6 +98,7 @@ namespace AptekFarma.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("UserID")
+                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
@@ -163,7 +158,7 @@ namespace AptekFarma.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.Sales", b =>
+            modelBuilder.Entity("AptekFarma.Models.Sale", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -172,14 +167,51 @@ namespace AptekFarma.Migrations
                     b.Property<int>("CampaignID")
                         .HasColumnType("int");
 
+                    b.Property<string>("CodigoNacional")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Nventas")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PonderacionPuntos")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Referencia")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignID");
+
+                    b.ToTable("Sales");
+                });
+
+            modelBuilder.Entity("AptekFarma.Models.SaleForm", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
                     b.Property<int>("Cantidad")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int>("ProductID")
+                        .HasColumnType("int");
+
                     b.Property<int>("ProductoID")
                         .HasColumnType("int");
+
+                    b.Property<int>("SaleID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SellerID")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("Validated")
                         .HasColumnType("tinyint(1)");
@@ -189,13 +221,13 @@ namespace AptekFarma.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CampaignID");
-
                     b.HasIndex("ProductoID");
+
+                    b.HasIndex("SaleID");
 
                     b.HasIndex("VendedorID");
 
-                    b.ToTable("Sales");
+                    b.ToTable("SalesForms");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -366,7 +398,7 @@ namespace AptekFarma.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("longtext");
 
-                    b.Property<int>("PharmacyID")
+                    b.Property<int?>("PharmacyID")
                         .HasColumnType("int");
 
                     b.Property<string>("PhoneNumber")
@@ -421,7 +453,9 @@ namespace AptekFarma.Migrations
                 {
                     b.HasOne("_AptekFarma.Models.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -436,24 +470,37 @@ namespace AptekFarma.Migrations
 
                     b.HasOne("_AptekFarma.Models.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserID");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Product");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.Sales", b =>
+            modelBuilder.Entity("AptekFarma.Models.Sale", b =>
                 {
-                    b.HasOne("AptekFarma.Models.Campaigns", "Campaign")
+                    b.HasOne("AptekFarma.Models.Campaign", "Campaign")
                         .WithMany()
                         .HasForeignKey("CampaignID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Campaign");
+                });
+
+            modelBuilder.Entity("AptekFarma.Models.SaleForm", b =>
+                {
                     b.HasOne("AptekFarma.Models.Products", "Product")
                         .WithMany()
                         .HasForeignKey("ProductoID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AptekFarma.Models.Sale", "Sale")
+                        .WithMany()
+                        .HasForeignKey("SaleID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -461,9 +508,9 @@ namespace AptekFarma.Migrations
                         .WithMany()
                         .HasForeignKey("VendedorID");
 
-                    b.Navigation("Campaign");
-
                     b.Navigation("Product");
+
+                    b.Navigation("Sale");
 
                     b.Navigation("Seller");
                 });
@@ -523,9 +570,7 @@ namespace AptekFarma.Migrations
                 {
                     b.HasOne("AptekFarma.Models.Pharmacy", "Pharmacy")
                         .WithMany()
-                        .HasForeignKey("PharmacyID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PharmacyID");
 
                     b.Navigation("Pharmacy");
                 });

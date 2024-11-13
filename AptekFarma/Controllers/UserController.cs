@@ -59,7 +59,7 @@ namespace _AptekFarma.Controllers
             var validation = ValidationsUserRegister(dto);
             if (validation != "ok")
             {
-                return BadRequest(validation);
+                return BadRequest(new { message = validation });
             }
 
             var user = new User
@@ -78,7 +78,7 @@ namespace _AptekFarma.Controllers
             await _userManager.CreateAsync(user, dto.Password);
             await _userManager.AddToRoleAsync(user, dto.rol);
 
-            return Ok(new { Token = GenerateJwtToken(user) });
+            return Ok(new { message = "Usuario creado correctamente" });
 
         }
 
@@ -109,7 +109,7 @@ namespace _AptekFarma.Controllers
                     user.RememberMe = model.RemembeMe;
                     _context.Update(user);
                     await _context.SaveChangesAsync();
-                    return Ok(new { Token, rol, user.Id });
+                    return Ok(new { Token, rol = rol[0], user.Id, nombre=user.nombre+" "+user.apellidos });
 
                 }
 
@@ -212,7 +212,7 @@ namespace _AptekFarma.Controllers
 
             if (usuario == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Usuario no encontrado" });
             }
 
             var user = new UserDTO();
@@ -225,7 +225,7 @@ namespace _AptekFarma.Controllers
             user.FechaNacimiento = usuario.fecha_nacimiento;
             user.rol = _userManager.GetRolesAsync(usuario).Result.FirstOrDefault();
 
-            return user;
+            return Ok(user);
         }
 
         // PUT: api/Usuarios/5
@@ -235,20 +235,20 @@ namespace _AptekFarma.Controllers
         {
             if (userId == "")
             {
-                return BadRequest("Debes seleccionar el usuario a modificar");
+                return BadRequest(new { message = "Debes seleccionar el usuario a modificar" });
             }
 
             var validation = ValidationsUser(dto);
             if (validation != "ok")
             {
-                return BadRequest(validation);
+                return BadRequest(new { message = validation });
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
             {
-                return NotFound("Usuario no encontrado");
+                return NotFound(new { message = "Usuario no encontrado" });
             }
 
             user.UserName = dto.UserName != "" && dto.UserName != "string" ? dto.UserName : user.UserName;
@@ -271,11 +271,11 @@ namespace _AptekFarma.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 
-                return NotFound();
+                return NotFound(new { message = "Error al actualizar el usuario" });
                 
             }
 
-            return Ok();
+            return Ok(new { message = "Usuario actualizado correctamente" });
         }
 
         // DELETE: api/Usuarios/5
@@ -286,13 +286,13 @@ namespace _AptekFarma.Controllers
             var usuario = await _context.Users.FindAsync(id);
             if (usuario == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Usuario no encontrado" });
             }
 
             _context.Users.Remove(usuario);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { message = "Usuario eliminado correctamente" });
         }
 
         [HttpPost("CambiarRol")]
@@ -302,14 +302,14 @@ namespace _AptekFarma.Controllers
             var usuario = await _context.Users.FindAsync(id);
             if (usuario == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Usuario no encontrado" });
             }
 
             var roles = await _userManager.GetRolesAsync(usuario);
             await _userManager.RemoveFromRolesAsync(usuario, roles);
             await _userManager.AddToRoleAsync(usuario, rol);
 
-            return Ok();
+            return Ok(new { message = "Rol del usuario modificado correctamente" });
         }
 
         private bool UsuarioExists(string id)
@@ -377,11 +377,6 @@ namespace _AptekFarma.Controllers
             if (!matchPhone.Success)
             {
                 return "Telefono no valido";
-            }
-
-            if (dto.PharmacyId == 0)
-            {
-                return "Debes seleccinar una farmacia valida";
             }
 
             return "ok";
@@ -529,7 +524,6 @@ namespace _AptekFarma.Controllers
 
             return true;
         }
-
 
     }
 

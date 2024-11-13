@@ -58,7 +58,7 @@ namespace _AptekFarma.Controllers
 
             if (campaign == null)
             {
-                return NotFound("No se ha encontrado campaña");
+                return NotFound(new { message = "No se ha encontrado campaña" });
             }
 
             return Ok(campaign);
@@ -67,17 +67,15 @@ namespace _AptekFarma.Controllers
         [HttpPost("AddCampaign")]
         public async Task<IActionResult> AddCampaign(CampaignDTO campaign)
         {
-            var newCampaign = new Campaigns
+            var newCampaign = new Campaign
             {
-                CodigoNacional = campaign.CodigoNacional,
-                Referencia = campaign.Referencia,
-                Nventas = campaign.Nventas,
-                PonderacionPuntos = campaign.PonderacionPuntos,
+                Nombre = campaign.Nombre,
+                Descripcion = campaign.Descripcion,
                 FechaCaducidad = campaign.FechaCaducidad
             };
-            await _context.Campaigns.AddAsync(newCampaign);
+            //await _context.Campaigns.AddAsync(newCampaign);
             await _context.SaveChangesAsync();
-            return Ok(campaign);
+            return Ok(new { message = "Campaña agregada correctamente" });
         }
 
         [HttpPut("UpdateCampaign")]
@@ -87,18 +85,16 @@ namespace _AptekFarma.Controllers
 
             if (campaignToUpdate == null)
             {
-                return NotFound("No se ha encontrado campaña");
-            }   
+                return NotFound(new { message = "No se ha encontrado campaña" });
+            }
 
-            campaignToUpdate.CodigoNacional = campaign.CodigoNacional;
-            campaignToUpdate.Referencia = campaign.Referencia;
-            campaignToUpdate.Nventas = campaign.Nventas;
-            campaignToUpdate.PonderacionPuntos = campaign.PonderacionPuntos;
+            campaignToUpdate.Nombre = campaign.Nombre;
+            campaignToUpdate.Descripcion = campaign.Descripcion;
             campaignToUpdate.FechaCaducidad = campaign.FechaCaducidad;
 
             _context.Campaigns.Update(campaignToUpdate);
             await _context.SaveChangesAsync();
-            return Ok(campaign);
+            return Ok(new { message = "Campaña modificada correctamente" });
         }
 
         [HttpDelete("DeleteCampaign")]
@@ -108,67 +104,12 @@ namespace _AptekFarma.Controllers
 
             if (campaign == null)
             {
-                return NotFound("No se ha encontrado campaña");
+                return NotFound(new { message = "No se ha encontrado campaña" });
             }
 
             _context.Campaigns.Remove(campaign);
             await _context.SaveChangesAsync();
-            return Ok("Campaña borrada correctamente");
+            return Ok(new { message = "Campaña borrada correctamente" });
         }
-
-        [HttpPost("AddCampaignsExcel")]
-        public async Task<IActionResult> AddCampaignsExcel(IFormFile file)
-        {
-            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
-            {
-                return BadRequest("Debe proporcionar un archivo .xlsx");
-            }
-
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-            var campaigns = new List<Campaigns>();
-            using (var package = new ExcelPackage(file.OpenReadStream()))
-            {
-                var worksheet = package.Workbook.Worksheets[0];
-                var rowCount = worksheet.Dimension.Rows;
-
-                for (int row = 2; row <= rowCount; row++)
-                {
-                    var fechaCaducidadValue = worksheet.Cells[row, 5].Value?.ToString().Trim();
-                    DateTime fechaCaducidad;
-
-                    // Intentar convertir directamente como DateTime
-                    if (DateTime.TryParse(fechaCaducidadValue, out fechaCaducidad))
-                    {
-                        // Conversion exitosa, usar la fecha
-                    }
-                    else if (double.TryParse(fechaCaducidadValue, out double fechaExcel))
-                    {
-                        // Si es un número, interpretarlo como fecha en formato Excel
-                        fechaCaducidad = DateTime.FromOADate(fechaExcel);
-                    }
-                    else
-                    {
-                        // Manejar el error si no se puede convertir
-                        return BadRequest($"Fecha inválida en la fila {row}");
-                    }
-
-                    campaigns.Add(new Campaigns
-                    {
-                        CodigoNacional = worksheet.Cells[row, 1].Value.ToString().Trim(),
-                        Referencia = worksheet.Cells[row, 2].Value.ToString().Trim(),
-                        Nventas = int.Parse(worksheet.Cells[row, 3].Value.ToString().Trim()),
-                        PonderacionPuntos = int.Parse(worksheet.Cells[row, 4].Value.ToString().Trim()),
-                        FechaCaducidad = fechaCaducidad
-                    });
-                }
-            }
-
-            await _context.Campaigns.AddRangeAsync(campaigns);
-            await _context.SaveChangesAsync();
-            return Ok(campaigns);
-        }
-
-
     }
 }

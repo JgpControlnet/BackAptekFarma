@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptekFarma.Models
 {
-    public class Campaigns
+    public class Sale
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -12,7 +12,9 @@ namespace AptekFarma.Models
         public string Referencia { get; set; }
         public int Nventas { get; set; }
         public int PonderacionPuntos { get; set; }
-        public DateTime FechaCaducidad { get; set; }
+        public int CampaignID { get; set; }
+        [ForeignKey("CampaignID")]
+        public Campaign Campaign { get; set; }
 
     }
 }

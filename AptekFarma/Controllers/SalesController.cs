@@ -51,8 +51,6 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetSales([FromQuery] SalesFilterDTO filtro)
         {
             var sales = await _context.Sales
-                .Include(sale => sale.Product)
-                .Include(sale => sale.Seller)
                 .Include(sale => sale.Campaign)
                 .ToListAsync();
 
@@ -60,24 +58,29 @@ namespace _AptekFarma.Controllers
 
             if (filtro != null)
             {
-                if (filtro.ProductoId != 0)
+                if (!string.IsNullOrEmpty(filtro.CodigoNacional))
                 {
-                    sales = sales.Where(x => x.Product.Id == filtro.ProductoId).ToList();
+                    sales = sales.Where(x => x.CodigoNacional == filtro.CodigoNacional).ToList();
                 }
 
-                if (filtro.Cantidad != 0)
+                if (!string.IsNullOrEmpty(filtro.Referencia))
                 {
-                    sales = sales.Where(x => x.Cantidad == filtro.Cantidad).ToList();
+                    sales = sales.Where(x => x.Referencia == filtro.Referencia).ToList();
+                }
+
+                if (filtro.Nventas != 0)
+                {
+                    sales = sales.Where(x => x.Nventas == filtro.Nventas).ToList();
+                }
+
+                if (filtro.PonderacionPuntos != 0)
+                {
+                    sales = sales.Where(x => x.PonderacionPuntos >= filtro.PonderacionPuntos).ToList();
                 }
 
                 if (filtro.CampaignId != 0)
                 {
                     sales = sales.Where(x => x.Campaign.Id == filtro.CampaignId).ToList();
-                }
-
-                if (filtro.VendedorId != "")
-                {
-                    sales = sales.Where(x => x.Seller.Id == filtro.VendedorId).ToList();
                 }
             }
 
@@ -92,33 +95,18 @@ namespace _AptekFarma.Controllers
             {
                 var response = new
                 {
-                    Id = sale.Id,
-                    Product = new
-                    {
-                        CodigoNacional = sale.Product.CodigoNacional,
-                        Nombre = sale.Product.Nombre,
-                        Imagen = sale.Product.Imagen,
-                        Precio = sale.Product.Precio
-                    },
-                    Cantidad = sale.Cantidad,
-                    Seller = new
-                    {
-                        Id = sale.Seller.Id,
-                        UserName = sale.Seller.UserName,
-                        Email = sale.Seller.Email,
-                        Points = sale.Seller.Points
-                    },
-                    Fecha = sale.Fecha,
+                    sale.Id,
+                    sale.CodigoNacional,
+                    sale.Referencia,
+                    NumeroVentas = sale.Nventas,
+                    sale.PonderacionPuntos,
                     Campaign = new
                     {
-                        Id = sale.Campaign.Id,
-                        CodigoNacional = sale.Campaign.CodigoNacional,
-                        Referencia = sale.Campaign.Referencia,
-                        PonderacionPuntos = sale.Campaign.PonderacionPuntos,
-                        Nventas = sale.Campaign.Nventas,
-                        FechaCaducidad = sale.Campaign.FechaCaducidad
-                    },
-                    Validated = sale.Validated
+                        sale.Campaign.Id,
+                        sale.Campaign.Nombre,
+                        sale.Campaign.Descripcion,
+                        sale.Campaign.FechaCaducidad
+                    }
                 };
 
                 salesResponse.Add(response);
@@ -132,45 +120,28 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetSaleById(int id)
         {
             var sale = await _context.Sales
-                .Include(sale => sale.Product)
-                .Include(sale => sale.Seller)
                 .Include(sale => sale.Campaign)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (sale == null)
             {
-                return NotFound("No se ha encontrado la venta");
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
             var response = new
             {
-                Id = sale.Id,
-                Product = new
-                {
-                    CodigoNacional = sale.Product.CodigoNacional,
-                    Nombre = sale.Product.Nombre,
-                    Imagen = sale.Product.Imagen,
-                    Precio = sale.Product.Precio
-                },
-                Cantidad = sale.Cantidad,
-                Seller = new
-                {
-                    Id = sale.Seller.Id,
-                    UserName = sale.Seller.UserName,
-                    Email = sale.Seller.Email,
-                    Points = sale.Seller.Points
-                },
-                Fecha = sale.Fecha,
+                sale.Id,
+                sale.CodigoNacional,
+                sale.Referencia,
+                NumeroVentas = sale.Nventas,
+                sale.PonderacionPuntos,
                 Campaign = new
                 {
-                    Id = sale.Campaign.Id,
-                    CodigoNacional = sale.Campaign.CodigoNacional,
-                    Referencia = sale.Campaign.Referencia,
-                    PonderacionPuntos = sale.Campaign.PonderacionPuntos,
-                    Nventas = sale.Campaign.Nventas,
-                    FechaCaducidad = sale.Campaign.FechaCaducidad
-                },
-                Validated = sale.Validated
+                    sale.Campaign.Id,
+                    sale.Campaign.Nombre,
+                    sale.Campaign.Descripcion,
+                    sale.Campaign.FechaCaducidad
+                }
             };
 
             return Ok(response);
@@ -179,23 +150,20 @@ namespace _AptekFarma.Controllers
         [HttpPost("CreateSale")]
         public async Task<IActionResult> CreateSale(SalesDTO sale)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == sale.ProductoId);
-            var seller = await _context.Users.FirstOrDefaultAsync(x => x.Id == sale.VendedorId);
             var campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == sale.CampaignId);
 
-            if (product == null || seller == null || campaign == null)
+            if (campaign == null)
             {
-                return BadRequest("Invalid product, seller or campaign");
+                return BadRequest(new { message = "No se encuentra campaña" });
             }
 
-            var newSale = new Sales
+            var newSale = new Sale
             {
-                Product = product,
-                Cantidad = sale.Cantidad,
-                Seller = seller,
-                Fecha = DateTime.Now,
-                Campaign = campaign,
-                Validated = false
+                CodigoNacional = sale.CodigoNacional,
+                Referencia = sale.Referencia,
+                Nventas = sale.Nventas,
+                PonderacionPuntos = sale.PonderacionPuntos,
+                Campaign = campaign
             };
 
             _context.Sales.Add(newSale);
@@ -203,98 +171,72 @@ namespace _AptekFarma.Controllers
 
             var response = new
             {
-                Id = newSale.Id,
-                Product = new
-                {
-                    CodigoNacional = newSale.Product.CodigoNacional,
-                    Nombre = newSale.Product.Nombre,
-                    Imagen = newSale.Product.Imagen,
-                    Precio = newSale.Product.Precio
-                },
-                Cantidad = newSale.Cantidad,
-                Seller = new
-                {
-                    Id = newSale.Seller.Id,
-                    UserName = newSale.Seller.UserName,
-                    Email = newSale.Seller.Email,
-                    Points = newSale.Seller.Points
-                },
-                Fecha = newSale.Fecha,
+                newSale.Id,
+                newSale.CodigoNacional,
+                newSale.Referencia,
+                NumeroVentas = newSale.Nventas,
+                newSale.PonderacionPuntos,
                 Campaign = new
                 {
-                    Id = newSale.Campaign.Id,
-                    CodigoNacional = newSale.Campaign.CodigoNacional,
-                    Referencia = newSale.Campaign.Referencia,
-                    PonderacionPuntos = newSale.Campaign.PonderacionPuntos,
-                    Nventas = newSale.Campaign.Nventas,
-                    FechaCaducidad = newSale.Campaign.FechaCaducidad
-                },
-                Validated = newSale.Validated
+                    newSale.Campaign.Id,
+                    newSale.Campaign.Nombre,
+                    newSale.Campaign.Descripcion,
+                    newSale.Campaign.FechaCaducidad
+                }
             };
 
-            return Ok(response);
+            return Ok(new { message = "Venta creada correctamente" });
         }
 
         [HttpPut("UpdateSale")]
         public async Task<IActionResult> UpdateSale(int saleId, [FromBody] SalesDTO sale)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == sale.ProductoId);
-            var seller = await _context.Users.FirstOrDefaultAsync(x => x.Id == sale.VendedorId);
-            var campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == sale.CampaignId);
+            Campaign campaign = null;
 
-            if (product == null || seller == null || campaign == null)
+            if (sale.CampaignId != 0)
             {
-                return BadRequest("Invalid product, seller or campaign");
+                campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == sale.CampaignId);
+
+                if (campaign == null)
+                {
+                    return BadRequest(new { message = "No se encuentra campaña" });
+                }
             }
 
             var saleToUpdate = await _context.Sales.FirstOrDefaultAsync(x => x.Id == saleId);
 
             if (saleToUpdate == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Venta no encontrada" });
             }
 
-            saleToUpdate.Product = product;
-            saleToUpdate.Cantidad = sale.Cantidad != 0 ? sale.Cantidad : saleToUpdate.Cantidad;
-            saleToUpdate.Seller = seller;
-            saleToUpdate.Campaign = campaign;
+            saleToUpdate.CodigoNacional = sale.CodigoNacional != null ? sale.CodigoNacional : saleToUpdate.CodigoNacional;
+            saleToUpdate.Referencia = sale.Referencia != null ? sale.Referencia : saleToUpdate.Referencia;
+            saleToUpdate.Nventas = sale.Nventas != 0 ? sale.Nventas : saleToUpdate.Nventas;
+            saleToUpdate.PonderacionPuntos = sale.PonderacionPuntos != 0 ? sale.PonderacionPuntos : saleToUpdate.PonderacionPuntos;
+            saleToUpdate.Campaign = campaign ?? saleToUpdate.Campaign;
 
             var response = new
             {
-                Id = saleToUpdate.Id,
-                Product = new
-                {
-                    CodigoNacional = saleToUpdate.Product.CodigoNacional,
-                    Nombre = saleToUpdate.Product.Nombre,
-                    Imagen = saleToUpdate.Product.Imagen,
-                    Precio = saleToUpdate.Product.Precio
-                },
-                Cantidad = saleToUpdate.Cantidad,
-                Seller = new
-                {
-                    Id = saleToUpdate.Seller.Id,
-                    UserName = saleToUpdate.Seller.UserName,
-                    Email = saleToUpdate.Seller.Email,
-                    Points = saleToUpdate.Seller.Points
-                },
-                Fecha = saleToUpdate.Fecha,
+                saleToUpdate.Id,
+                saleToUpdate.CodigoNacional,
+                saleToUpdate.Referencia,
+                NumeroVentas = saleToUpdate.Nventas,
+                saleToUpdate.PonderacionPuntos,
                 Campaign = new
                 {
-                    Id = saleToUpdate.Campaign.Id,
-                    CodigoNacional = saleToUpdate.Campaign.CodigoNacional,
-                    Referencia = saleToUpdate.Campaign.Referencia,
-                    PonderacionPuntos = saleToUpdate.Campaign.PonderacionPuntos,
-                    Nventas = saleToUpdate.Campaign.Nventas,
-                    FechaCaducidad = saleToUpdate.Campaign.FechaCaducidad
-                },
-                Validated = saleToUpdate.Validated
+                    saleToUpdate.Campaign.Id,
+                    saleToUpdate.Campaign.Nombre,
+                    saleToUpdate.Campaign.Descripcion,
+                    saleToUpdate.Campaign.FechaCaducidad
+                }
             };
 
             _context.Update(saleToUpdate);
 
             await _context.SaveChangesAsync();
 
-            return Ok(response);
+            return Ok(new { message = "Venta modificada correctamente" });
         }
 
         [HttpDelete("DeleteSale")]
@@ -304,52 +246,93 @@ namespace _AptekFarma.Controllers
 
             if (sale == null)
             {
-                return NotFound("No se ha encontrado la venta");
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
             _context.Sales.Remove(sale);
             await _context.SaveChangesAsync();
 
-            return Ok("Venta borrada correctamente");
+            return Ok(new { message = "Venta borrada correctamente" });
         }
 
-        [HttpPut("ValidateSale")]
-        public async Task<IActionResult> ValidateSale(int id)
+        [HttpPost("AddSalesExcel")]
+        public async Task<IActionResult> AddSalesExcel([FromForm] SalesExcelDTO dto)
         {
-            var sale = await _context.Sales
-                .Include(sale => sale.Seller)
-                .Include(sale => sale.Campaign)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (sale == null)
+            if (dto.file?.Length == 0 || Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx")
             {
-                return NotFound();
+                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
             }
 
-            if (sale.Validated)
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            var sales = new List<Sale>();
+            using (var package = new ExcelPackage(dto.file.OpenReadStream()))
             {
-                return BadRequest("Venta ya validada");
+                var worksheet = package.Workbook.Worksheets[0];
+                var rowCount = worksheet.Dimension.Rows;
+
+                for (int row = 2; row <= rowCount; row++)
+                {
+                    var fechaCaducidadValue = worksheet.Cells[row, 5].Value?.ToString().Trim();
+                    DateTime fechaCaducidad;
+
+                    // Intentar convertir directamente como DateTime
+                    if (DateTime.TryParse(fechaCaducidadValue, out fechaCaducidad))
+                    {
+                        // Conversion exitosa, usar la fecha
+                    }
+                    else if (double.TryParse(fechaCaducidadValue, out double fechaExcel))
+                    {
+                        // Si es un número, interpretarlo como fecha en formato Excel
+                        fechaCaducidad = DateTime.FromOADate(fechaExcel);
+                    }
+                    else
+                    {
+                        // Manejar el error si no se puede convertir
+                        return BadRequest(new { message = $"Fecha inválida en la fila {row}" });
+                    }
+
+                    Campaign campaign = null;
+
+                    if (dto.newCampaign)
+                    {
+                        campaign = new Campaign
+                        {
+                            Nombre = dto.campaignDTO.Nombre,
+                            Descripcion = dto.campaignDTO.Descripcion,
+                            FechaCaducidad = fechaCaducidad
+                        };
+
+                        await _context.Campaigns.AddAsync(campaign);
+                        await _context.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.FechaCaducidad == fechaCaducidad);
+
+                        if (campaign == null)
+                        {
+                            return BadRequest(new { message = "No se encuentra campaña" });
+                        }
+                    }
+
+                    sales.Add(new Sale
+                    {
+                        CodigoNacional = worksheet.Cells[row, 1].Value.ToString().Trim(),
+                        Referencia = worksheet.Cells[row, 2].Value.ToString().Trim(),
+                        Nventas = int.Parse(worksheet.Cells[row, 3].Value.ToString().Trim()),
+                        PonderacionPuntos = int.Parse(worksheet.Cells[row, 4].Value.ToString().Trim()),
+                        Campaign = campaign
+                    });
+                }
             }
 
-            sale.Validated = true;
-
-            var user = sale.Seller;
-            var campaign = sale.Campaign;
-
-            user.Points += campaign.PonderacionPuntos * sale.Cantidad;
-            campaign.Nventas += 1;
-
-            var pointsEarned = new PointEarned();
-            pointsEarned.User = user;
-            pointsEarned.Points = campaign.PonderacionPuntos * sale.Cantidad;
-            pointsEarned.Fecha = DateTime.Now;
-
-            _context.PointsEarned.Add(pointsEarned);
-            _context.Update(sale);
+            await _context.Sales.AddRangeAsync(sales);
             await _context.SaveChangesAsync();
-
-            return Ok($"Venta {sale.Id} validada correctamente");
+            return Ok(new { message = "Ventas subidas correctamente" });
         }
+
+        
 
     }
 }
