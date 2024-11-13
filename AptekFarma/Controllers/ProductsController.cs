@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AptekFarma.Models;
 using OfficeOpenXml;
+using AptekFarma.Controllers;
 
 
 namespace _AptekFarma.Controllers
@@ -86,7 +87,7 @@ namespace _AptekFarma.Controllers
 
             if (product == null)
             {
-                return NotFound("No se ha encontrado Producto");
+                return NotFound(new { message = "No se ha encontrado Producto" });
             }
 
             return Ok(product);
@@ -105,21 +106,17 @@ namespace _AptekFarma.Controllers
 
             await _context.Products.AddAsync(product);
             await _context.SaveChangesAsync();
-            return Ok(product);
+            return Ok(new { message = "Producto creado correctamente" });
         }
 
         [HttpPut("UpdateProduct")]
         public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductDTO dto)
         {
             var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == productId);
-            var error = new
-            {
-                Error = "No se ha encontrado Producto"
-            };
 
             if (product == null)
             {
-                return NotFound(error);
+                return NotFound(new { message = "Producto no encontrado" });
             }
 
             product.CodigoNacional = dto.CodigoNacional;
@@ -129,7 +126,7 @@ namespace _AptekFarma.Controllers
 
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
-            return Ok(product);
+            return Ok(new { message = "Producto modificado correctamente" });
         }
 
         [HttpDelete("DeleteProduct")]
@@ -139,20 +136,20 @@ namespace _AptekFarma.Controllers
 
             if (product == null)
             {
-                return NotFound("No se ha encontrado Producto");
+                return NotFound(new { message = "No se ha encontrado Producto" });
             }
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
-            return Ok("Producto eliminado correctamente");
+            return Ok(new { message = "Producto eliminado correctamente" });
         }
 
         [HttpPost("AddProductsExcel")]
-        public async Task<IActionResult> AddProductsExcel(IFormFile file)
+        public async Task<IActionResult> AddProductsExcel([FromForm] FileDTO dto)
         {
-            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
+            if (dto.file?.Length == 0 || Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx")
             {
-                return BadRequest("Debe proporcionar un archivo .xlsx");
+                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
             }
 
             var products = new List<Products>();
@@ -161,7 +158,7 @@ namespace _AptekFarma.Controllers
 
             using (var stream = new MemoryStream())
             {
-                await file.CopyToAsync(stream);
+                await dto.file.CopyToAsync(stream);
                 stream.Position = 0;
 
                 using (var package = new ExcelPackage(stream))
@@ -186,7 +183,7 @@ namespace _AptekFarma.Controllers
             _context.Products.AddRange(products);
             await _context.SaveChangesAsync();
 
-            return Ok("Productos importados exitosamente.");
+            return Ok(new { message = "Productos importados exitosamente." });
         }
 
     }

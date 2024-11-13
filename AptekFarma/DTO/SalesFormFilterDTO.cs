@@ -13,6 +13,7 @@ namespace AptekFarma.DTO
         public int SaleId { get; set; } = 0;
         public bool Validated { get; set; } = false;
         public int PageNumber { get; set; } = 1;
+        public int? saleFormId { get; set; }
         public int PageSize { get; set; } = 10;
     }
 }

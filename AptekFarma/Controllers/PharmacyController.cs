@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AptekFarma.Models;
 using OfficeOpenXml;
+using AptekFarma.Controllers;
 
 
 namespace _AptekFarma.Controllers
@@ -80,7 +81,7 @@ namespace _AptekFarma.Controllers
 
             if (pharmacy == null)
             {
-                return NotFound("No se ha encontrado Farmacia");
+                return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
             return Ok(pharmacy);
@@ -98,7 +99,7 @@ namespace _AptekFarma.Controllers
             await _context.Pharmacies.AddAsync(pharmacy);
             await _context.SaveChangesAsync();
 
-            return Ok(pharmacy);
+            return Ok(new { message = "Farmacia creada correctamente" });
         }
 
         [HttpPut("UpdatePharmacy")]
@@ -108,7 +109,7 @@ namespace _AptekFarma.Controllers
 
             if (pharmacy == null)
             {
-                return NotFound("No se ha encontrado Farmacia");
+                return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
             pharmacy.Nombre = pharmacyDTO.Nombre;
@@ -117,7 +118,7 @@ namespace _AptekFarma.Controllers
             _context.Pharmacies.Update(pharmacy);
             await _context.SaveChangesAsync();
 
-            return Ok(pharmacy);
+            return Ok(new { message = "Farmacia modificada correctamente" });
         }
 
         [HttpDelete("DeletePharmacy")]
@@ -127,28 +128,28 @@ namespace _AptekFarma.Controllers
 
             if (pharmacy == null)
             {
-                return NotFound("No se ha encontrado Farmacia");
+                return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
             _context.Pharmacies.Remove(pharmacy);
             await _context.SaveChangesAsync();
 
-            return Ok("Farmacia eliminda correctamente");
+            return Ok(new { message = "Farmacia eliminda correctamente" });
         }
 
         [HttpPost("ImportPharmaciesExcel")]
-        public async Task<IActionResult> ImportPharmacies(IFormFile file)
+        public async Task<IActionResult> ImportPharmacies([FromForm] FileDTO dto)
         {
-            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
+            if (dto.file?.Length == 0 || Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx")
             {
-                return BadRequest("Debe proporcionar un archivo .xlsx");
+                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
             }
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             using (var stream = new MemoryStream())
             {
-                await file.CopyToAsync(stream);
+                await dto.file.CopyToAsync(stream);
 
                 using (var package = new ExcelPackage(stream))
                 {
@@ -170,7 +171,7 @@ namespace _AptekFarma.Controllers
                 }
             }
 
-            return Ok("Importado Correctamente");
+            return Ok(new { message = "Importado Correctamente" });
         }
     }
 }

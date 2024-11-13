@@ -35,7 +35,6 @@ builder.Services.AddSwaggerGen(setup =>
         }
     };
 
-
     setup.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
 
     setup.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -90,13 +89,7 @@ builder.Services.AddCors(options =>
         });
 });
 
-
-
 builder.Services.AddHttpClient();
-
-
-
-
 
 //Serilog Config
 builder.Host.UseSerilog((context, configuration) =>
@@ -126,6 +119,8 @@ app.UseSerilogRequestLogging();
 //app.UseHttpsRedirection();
 
 app.UseAuthorization();
+app.UseStaticFiles(); // Habilitar archivos estáticos
+
 
 app.MapControllers();
 app.UseCors();

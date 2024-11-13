@@ -9,6 +9,7 @@ namespace AptekFarma.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+        public string UserID { get; set; }
         [ForeignKey("UserID")]
         public User User { get; set; }
         public int Points { get; set; }

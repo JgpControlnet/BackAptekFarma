@@ -125,7 +125,7 @@ namespace _AptekFarma.Controllers
 
             if (sale == null)
             {
-                return NotFound("No se ha encontrado la venta");
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
             var response = new
@@ -154,7 +154,7 @@ namespace _AptekFarma.Controllers
 
             if (campaign == null)
             {
-                return BadRequest("No se encuentra campaña");
+                return BadRequest(new { message = "No se encuentra campaña" });
             }
 
             var newSale = new Sale
@@ -185,20 +185,21 @@ namespace _AptekFarma.Controllers
                 }
             };
 
-            return Ok(response);
+            return Ok(new { message = "Venta creada correctamente" });
         }
 
         [HttpPut("UpdateSale")]
         public async Task<IActionResult> UpdateSale(int saleId, [FromBody] SalesDTO sale)
         {
             Campaign campaign = null;
+
             if (sale.CampaignId != 0)
             {
                 campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == sale.CampaignId);
 
                 if (campaign == null)
                 {
-                    return BadRequest("No se encuentra campaña");
+                    return BadRequest(new { message = "No se encuentra campaña" });
                 }
             }
 
@@ -206,7 +207,7 @@ namespace _AptekFarma.Controllers
 
             if (saleToUpdate == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Venta no encontrada" });
             }
 
             saleToUpdate.CodigoNacional = sale.CodigoNacional != null ? sale.CodigoNacional : saleToUpdate.CodigoNacional;
@@ -235,7 +236,7 @@ namespace _AptekFarma.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(response);
+            return Ok(new { message = "Venta modificada correctamente" });
         }
 
         [HttpDelete("DeleteSale")]
@@ -245,27 +246,27 @@ namespace _AptekFarma.Controllers
 
             if (sale == null)
             {
-                return NotFound("No se ha encontrado la venta");
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
             _context.Sales.Remove(sale);
             await _context.SaveChangesAsync();
 
-            return Ok("Venta borrada correctamente");
+            return Ok(new { message = "Venta borrada correctamente" });
         }
 
         [HttpPost("AddSalesExcel")]
-        public async Task<IActionResult> AddSalesExcel(IFormFile file, bool newCampaign, [FromQuery] CampaignDTO? dto)
+        public async Task<IActionResult> AddSalesExcel([FromForm] SalesExcelDTO dto)
         {
-            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
+            if (dto.file?.Length == 0 || Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx")
             {
-                return BadRequest("Debe proporcionar un archivo .xlsx");
+                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
             }
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             var sales = new List<Sale>();
-            using (var package = new ExcelPackage(file.OpenReadStream()))
+            using (var package = new ExcelPackage(dto.file.OpenReadStream()))
             {
                 var worksheet = package.Workbook.Worksheets[0];
                 var rowCount = worksheet.Dimension.Rows;
@@ -288,17 +289,17 @@ namespace _AptekFarma.Controllers
                     else
                     {
                         // Manejar el error si no se puede convertir
-                        return BadRequest($"Fecha inválida en la fila {row}");
+                        return BadRequest(new { message = $"Fecha inválida en la fila {row}" });
                     }
 
                     Campaign campaign = null;
 
-                    if (newCampaign)
+                    if (dto.newCampaign)
                     {
                         campaign = new Campaign
                         {
-                            Nombre = dto.Nombre,
-                            Descripcion = dto.Descripcion,
+                            Nombre = dto.campaignDTO.Nombre,
+                            Descripcion = dto.campaignDTO.Descripcion,
                             FechaCaducidad = fechaCaducidad
                         };
 
@@ -311,7 +312,7 @@ namespace _AptekFarma.Controllers
 
                         if (campaign == null)
                         {
-                            return BadRequest("No se encuentra campaña");
+                            return BadRequest(new { message = "No se encuentra campaña" });
                         }
                     }
 
@@ -328,7 +329,7 @@ namespace _AptekFarma.Controllers
 
             await _context.Sales.AddRangeAsync(sales);
             await _context.SaveChangesAsync();
-            return Ok(sales);
+            return Ok(new { message = "Ventas subidas correctamente" });
         }
 
         

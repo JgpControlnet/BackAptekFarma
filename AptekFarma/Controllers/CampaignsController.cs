@@ -58,7 +58,7 @@ namespace _AptekFarma.Controllers
 
             if (campaign == null)
             {
-                return NotFound("No se ha encontrado campaña");
+                return NotFound(new { message = "No se ha encontrado campaña" });
             }
 
             return Ok(campaign);
@@ -75,7 +75,7 @@ namespace _AptekFarma.Controllers
             };
             //await _context.Campaigns.AddAsync(newCampaign);
             await _context.SaveChangesAsync();
-            return Ok(campaign);
+            return Ok(new { message = "Campaña agregada correctamente" });
         }
 
         [HttpPut("UpdateCampaign")]
@@ -85,7 +85,7 @@ namespace _AptekFarma.Controllers
 
             if (campaignToUpdate == null)
             {
-                return NotFound("No se ha encontrado campaña");
+                return NotFound(new { message = "No se ha encontrado campaña" });
             }
 
             campaignToUpdate.Nombre = campaign.Nombre;
@@ -94,7 +94,7 @@ namespace _AptekFarma.Controllers
 
             _context.Campaigns.Update(campaignToUpdate);
             await _context.SaveChangesAsync();
-            return Ok(campaign);
+            return Ok(new { message = "Campaña modificada correctamente" });
         }
 
         [HttpDelete("DeleteCampaign")]
@@ -104,12 +104,12 @@ namespace _AptekFarma.Controllers
 
             if (campaign == null)
             {
-                return NotFound("No se ha encontrado campaña");
+                return NotFound(new { message = "No se ha encontrado campaña" });
             }
 
             _context.Campaigns.Remove(campaign);
             await _context.SaveChangesAsync();
-            return Ok("Campaña borrada correctamente");
+            return Ok(new { message = "Campaña borrada correctamente" });
         }
     }
 }

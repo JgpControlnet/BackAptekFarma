@@ -144,8 +144,8 @@ namespace _AptekFarma.Controllers
             return Ok(salesResponse);
         }
 
-        [HttpGet("GetSaleById")]
-        public async Task<IActionResult> GetSaleById(int id)
+        [HttpGet("GetSalesFormById")]
+        public async Task<IActionResult> GetSalesFormById(int id)
         {
             var saleForm = await _context.SalesForms
                 .Include(sale => sale.Product)
@@ -155,7 +155,7 @@ namespace _AptekFarma.Controllers
 
             if (saleForm == null)
             {
-                return NotFound("No se ha encontrado la venta");
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
             var response = new
@@ -199,26 +199,27 @@ namespace _AptekFarma.Controllers
             return Ok(response);
         }
 
-        [HttpPost("CreateSale")]
-        public async Task<IActionResult> CreateSale(SalesFormFilterDTO saleForm)
+        [HttpPost("CreateSalesForm")]
+        public async Task<IActionResult> CreateSalesForm(SalesFormFilterDTO saleForm)
         {
             var sale = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == saleForm.SaleId);
 
             if (sale == null)
             {
-                return BadRequest("No se encuentra venta");
+                return BadRequest(new { message = "No se encuentra venta" });
             }
 
             var newSaleForm = new SaleForm
             {
-                CodigoNacional = sale.CodigoNacional,
-                Referencia = sale.Referencia,
-                Nventas = sale.Nventas,
-                PonderacionPuntos = sale.PonderacionPuntos,
-                Campaign = campaign
+                ProductID = saleForm.ProductId,
+                Cantidad = saleForm.Cantidad,
+                SellerID = saleForm.SellerId,
+                Fecha = saleForm.Fecha,
+                SaleID = saleForm.SaleId,
+                Validated = saleForm.Validated
             };
 
-            _context.Sales.Add(newSale);
+            _context.SalesForms.Add(newSaleForm);
             await _context.SaveChangesAsync();
 
             var response = new
@@ -226,164 +227,93 @@ namespace _AptekFarma.Controllers
                 Id = sale.Id,
                 Product = new
                 {
-                    CodigoNacional = sale.Product.CodigoNacional,
-                    Nombre = sale.Product.Nombre,
-                    Imagen = sale.Product.Imagen,
-                    Precio = sale.Product.Precio
+                    CodigoNacional = newSaleForm.Product.CodigoNacional,
+                    Nombre = newSaleForm.Product.Nombre,
+                    Imagen = newSaleForm.Product.Imagen,
+                    Precio = newSaleForm.Product.Precio
                 },
-                Cantidad = sale.Cantidad,
+                Cantidad = newSaleForm.Cantidad,
                 Seller = new
                 {
-                    Id = sale.Seller.Id,
-                    UserName = sale.Seller.UserName,
-                    Email = sale.Seller.Email,
-                    Points = sale.Seller.Points
+                    Id = newSaleForm.Seller.Id,
+                    UserName = newSaleForm.Seller.UserName,
+                    Email = newSaleForm.Seller.Email,
+                    Points = newSaleForm.Seller.Points
                 },
-                Fecha = sale.Fecha,
+                Fecha = newSaleForm.Fecha,
                 Sale = new
                 {
-                    Id = sale.Sale.Id,
-                    CodigoNacional = sale.Sale.CodigoNacional,
-                    Referencia = sale.Sale.Referencia,
-                    PonderacionPuntos = sale.Sale.PonderacionPuntos,
-                    Nventas = sale.Sale.Nventas,
+                    Id = newSaleForm.Sale.Id,
+                    CodigoNacional = newSaleForm.Sale.CodigoNacional,
+                    Referencia = newSaleForm.Sale.Referencia,
+                    PonderacionPuntos = newSaleForm.Sale.PonderacionPuntos,
+                    Nventas = newSaleForm.Sale.Nventas,
                     Campaign = new
                     {
-                        Id = sale.Sale.Campaign.Id,
-                        Nombre = sale.Sale.Campaign.Nombre,
-                        Descripcion = sale.Sale.Campaign.Descripcion,
-                        FechaCaducidad = sale.Sale.Campaign.FechaCaducidad
+                        Id = newSaleForm.Sale.Campaign.Id,
+                        Nombre = newSaleForm.Sale.Campaign.Nombre,
+                        Descripcion = newSaleForm.Sale.Campaign.Descripcion,
+                        FechaCaducidad = newSaleForm.Sale.Campaign.FechaCaducidad
                     }
                 },
-                Validated = sale.Validated
+                Validated = newSaleForm.Validated
             };
 
 
-            return Ok(response);
+            return Ok(new { message = "Formulariio de venta creado correctamente" });
         }
 
-        [HttpPut("UpdateSale")]
-        public async Task<IActionResult> UpdateSale(int saleId, [FromBody] SalesDTO sale)
+        [HttpPut("UpdateSalesForm")]
+        public async Task<IActionResult> UpdateSalesForm([FromBody] SalesFormFilterDTO saleForm)
         {
-            Campaign campaign = null;
-            if (sale.CampaignId != 0)
-            {
-                campaign = await _context.Campaigns.FirstOrDefaultAsync(x => x.Id == sale.CampaignId);
-
-                if (campaign == null)
-                {
-                    return BadRequest("No se encuentra campaña");
-                }
+            var sale = await _context.SalesForms.FirstOrDefaultAsync(x => x.Id == saleForm.saleFormId);
+            if (sale == null) {
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
-            var saleToUpdate = await _context.Sales.FirstOrDefaultAsync(x => x.Id == saleId);
+            var response = await _context.SalesForms.
+                Include(sale => sale.Product).
+                Include(sale => sale.Seller).
+                Include(sale => sale.Sale).
+                FirstOrDefaultAsync(x => x.Id == saleForm.saleFormId);
 
-            if (saleToUpdate == null)
+            if (response == null)
             {
-                return NotFound();
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
-            saleToUpdate.CodigoNacional = sale.CodigoNacional != null ? sale.CodigoNacional : saleToUpdate.CodigoNacional;
-            saleToUpdate.Referencia = sale.Referencia != null ? sale.Referencia : saleToUpdate.Referencia;
-            saleToUpdate.Nventas = sale.Nventas != 0 ? sale.Nventas : saleToUpdate.Nventas;
-            saleToUpdate.PonderacionPuntos = sale.PonderacionPuntos != 0 ? sale.PonderacionPuntos : saleToUpdate.PonderacionPuntos;
-            saleToUpdate.Campaign = campaign ?? saleToUpdate.Campaign;
+            sale.ProductID = saleForm.ProductId;
+            sale.Cantidad = saleForm.Cantidad;
+            sale.SellerID = saleForm.SellerId;
+            sale.Fecha = saleForm.Fecha;
+            sale.SaleID = saleForm.SaleId;
+            sale.Validated = saleForm.Validated;
 
-            var response = new
-            {
-                saleToUpdate.Id,
-                saleToUpdate.CodigoNacional,
-                saleToUpdate.Referencia,
-                NumeroVentas = saleToUpdate.Nventas,
-                saleToUpdate.PonderacionPuntos,
-                Campaign = new
-                {
-                    saleToUpdate.Campaign.Id,
-                    saleToUpdate.Campaign.Nombre,
-                    saleToUpdate.Campaign.Descripcion,
-                    saleToUpdate.Campaign.FechaCaducidad
-                }
-            };
-
-            _context.Update(saleToUpdate);
+            _context.Update(response);
 
             await _context.SaveChangesAsync();
 
-            return Ok(response);
+            return Ok(new { message = "Formulario de venta editado correctamente" });
         }
 
-        [HttpDelete("DeleteSale")]
-        public async Task<IActionResult> DeleteSale(int id)
+        [HttpDelete("DeleteSalesForm")]
+        public async Task<IActionResult> DeleteSalesForm(int id)
         {
-            var sale = await _context.Sales.FirstOrDefaultAsync(x => x.Id == id);
+            var saleForm = await _context.SalesForms.FirstOrDefaultAsync(x => x.Id == id);
 
-            if (sale == null)
+            if (saleForm == null)
             {
-                return NotFound("No se ha encontrado la venta");
+                return NotFound(new { message = "No se ha encontrado la venta" });
             }
 
-            _context.Sales.Remove(sale);
+            _context.SalesForms.Remove(saleForm);
             await _context.SaveChangesAsync();
 
-            return Ok("Venta borrada correctamente");
+            return Ok(new { message = "Formulario de venta borrada correctamente" });
         }
 
-        [HttpPost("AddSalesExcel")]
-        public async Task<IActionResult> AddSalesExcel(IFormFile file, bool newCampaign, [FromQuery] CampaignDTO? dto)
-        {
-            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
-            {
-                return BadRequest("Debe proporcionar un archivo .xlsx");
-            }
-
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-            var sales = new List<Sale>();
-            using (var package = new ExcelPackage(file.OpenReadStream()))
-            {
-                var worksheet = package.Workbook.Worksheets[0];
-                var rowCount = worksheet.Dimension.Rows;
-
-                for (int row = 2; row <= rowCount; row++)
-                {
-                    var fechaCaducidadValue = worksheet.Cells[row, 5].Value?.ToString().Trim();
-                    DateTime fechaCaducidad;
-
-                    // Intentar convertir directamente como DateTime
-                    if (DateTime.TryParse(fechaCaducidadValue, out fechaCaducidad))
-                    {
-                        // Conversion exitosa, usar la fecha
-                    }
-                    else if (double.TryParse(fechaCaducidadValue, out double fechaExcel))
-                    {
-                        // Si es un número, interpretarlo como fecha en formato Excel
-                        fechaCaducidad = DateTime.FromOADate(fechaExcel);
-                    }
-                    else
-                    {
-                        // Manejar el error si no se puede convertir
-                        return BadRequest($"Fecha inválida en la fila {row}");
-                    }
-
-
-
-                    sales.Add(new Sale
-                    {
-                        CodigoNacional = worksheet.Cells[row, 1].Value.ToString().Trim(),
-                        Referencia = worksheet.Cells[row, 2].Value.ToString().Trim(),
-                        Nventas = int.Parse(worksheet.Cells[row, 3].Value.ToString().Trim()),
-                        PonderacionPuntos = int.Parse(worksheet.Cells[row, 4].Value.ToString().Trim()),
-                    });
-                }
-            }
-
-            await _context.Sales.AddRangeAsync(sales);
-            await _context.SaveChangesAsync();
-            return Ok(sales);
-        }
-
-        [HttpPut("ValidateSale")]
-        public async Task<IActionResult> ValidateSale(int id)
+        [HttpPut("ValidateSalesForm")]
+        public async Task<IActionResult> ValidateSalesForm(int id)
         {
             var saleForm = await _context.SalesForms
                 .Include(sale => sale.Seller)
@@ -392,12 +322,12 @@ namespace _AptekFarma.Controllers
 
             if (saleForm == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Formulario de venta no encontrado" });
             }
 
             if (saleForm.Validated)
             {
-                return BadRequest("Venta ya validada");
+                return BadRequest(new { message = "Formulario de venta ya validada" });
             }
 
             saleForm.Validated = true;
@@ -417,7 +347,7 @@ namespace _AptekFarma.Controllers
             _context.Update(saleForm);
             await _context.SaveChangesAsync();
 
-            return Ok($"Venta {saleForm.Id} validada correctamente");
+            return Ok(new { message = "Venta validada correctamente" });
         }
 
     }

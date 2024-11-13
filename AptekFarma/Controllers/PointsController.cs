@@ -51,18 +51,18 @@ namespace _AptekFarma.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
             if (user == null)
             {
-                return BadRequest("User not found");
+                return BadRequest(new { message = "Usuario no encontrado" });
             }
 
             var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == productId);
             if (product == null)
             {
-                return BadRequest("Product not found");
+                return BadRequest(new { message = "Producto no encontrado" });
             }
 
             if (product.Precio > user.Points)
             {
-                return BadRequest("Not enough points");
+                return BadRequest(new { message = "Sin puntos suficientes" });
             }
 
             user.Points -= product.Precio;
@@ -85,7 +85,7 @@ namespace _AptekFarma.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
             if (user == null)
             {
-                return BadRequest("User not found");
+                return BadRequest(new { message = "Usuario no encontrado" });
             }
 
             return Ok(user.Points);
@@ -97,7 +97,7 @@ namespace _AptekFarma.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
             if (user == null)
             {
-                return BadRequest("User not found");
+                return BadRequest(new { message = "User not found" });
             }
 
             var pointsEarnedHistory = await _context.PointsEarned
