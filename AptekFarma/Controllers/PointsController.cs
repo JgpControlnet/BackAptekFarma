@@ -60,16 +60,16 @@ namespace _AptekFarma.Controllers
                 return BadRequest(new { message = "Producto no encontrado" });
             }
 
-            if (product.Precio > user.Points)
+            if (product.PuntosNeceseraios > user.Points)
             {
                 return BadRequest(new { message = "Sin puntos suficientes" });
             }
 
-            user.Points -= product.Precio;
+            user.Points -= product.PuntosNeceseraios;
             var pointsRedeemed = new PointRedeemded();
             pointsRedeemed.User = user;
             pointsRedeemed.Product = product;
-            pointsRedeemed.Points = product.Precio;
+            pointsRedeemed.Points = product.PuntosNeceseraios;
             pointsRedeemed.Fecha = DateTime.Now;
 
             await _userManager.UpdateAsync(user);

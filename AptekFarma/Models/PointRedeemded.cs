@@ -15,7 +15,7 @@ namespace AptekFarma.Models
         public int ProductID { get; set; }
         [ForeignKey("ProductID")]
         public Products Product { get; set; }
-        public int Points { get; set; }
+        public decimal Points { get; set; }
         public DateTime Fecha { get; set; }
 
     }

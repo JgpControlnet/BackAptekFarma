@@ -14,7 +14,7 @@ namespace _AptekFarma.DTO
         public string FechaNacimiento { get; set; }
         public string rol { get; set; }
         public int PharmacyId { get; set; }
-        public int Points { get; set; }
+        public decimal Points { get; set; }
 
 
 
