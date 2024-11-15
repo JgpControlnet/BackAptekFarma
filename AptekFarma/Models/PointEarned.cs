@@ -12,7 +12,7 @@ namespace AptekFarma.Models
         public string UserID { get; set; }
         [ForeignKey("UserID")]
         public User User { get; set; }
-        public int Points { get; set; }
+        public decimal Points { get; set; }
         public DateTime Fecha { get; set; }
 
     }

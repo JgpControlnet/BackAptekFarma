@@ -57,10 +57,7 @@ namespace _AptekFarma.Controllers
 
             if (filtro != null)
             {
-                if (!string.IsNullOrEmpty(filtro.CodigoNacional))
-                {
-                    products = products.Where(x => x.CodigoNacional.ToLower().Contains(filtro.CodigoNacional.ToLower())).ToList();
-                }
+
 
                 if (!string.IsNullOrEmpty(filtro.Nombre))
                 {
@@ -69,7 +66,7 @@ namespace _AptekFarma.Controllers
 
                 if (filtro.Precio > 0)
                 {
-                    products = products.Where(x => x.Precio == filtro.Precio).ToList();
+                    products = products.Where(x => x.PuntosNeceseraios == filtro.Precio).ToList();
                 }
             }
 
@@ -101,10 +98,9 @@ namespace _AptekFarma.Controllers
         {
             var product = new Products
             {
-                CodigoNacional = dto.CodigoNacional,
                 Nombre = dto.Nombre,
                 Imagen = dto.Imagen,
-                Precio = dto.Precio
+                PuntosNeceseraios = dto.PuntosNeceseraios
             };
 
             await _context.Products.AddAsync(product);
@@ -123,10 +119,9 @@ namespace _AptekFarma.Controllers
                 return NotFound(new { message = "Producto no encontrado" });
             }
 
-            product.CodigoNacional = dto.CodigoNacional;
             product.Nombre = dto.Nombre;
             product.Imagen = dto.Imagen;
-            product.Precio = dto.Precio;
+            product.PuntosNeceseraios = dto.PuntosNeceseraios;
 
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
@@ -176,10 +171,9 @@ namespace _AptekFarma.Controllers
                     {
                         products.Add(new Products
                         {
-                            CodigoNacional = worksheet.Cells[row, 1]?.Text?.Trim(),
                             Nombre = worksheet.Cells[row, 2]?.Text?.Trim(),
                             Imagen = worksheet.Cells[row, 3]?.Text?.Trim(),
-                            Precio = int.TryParse(worksheet.Cells[row, 4]?.Text, out int precio) ? precio : 0
+                            PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 4]?.Text, out decimal precio) ? precio : 0
                         });
                     }
                 }
