@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace AptekFarma.Models
 {
     [Table("producto_campanna")]
-    public class ProdcutoCampanna
+    public class ProductoCampanna
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -14,7 +14,7 @@ namespace AptekFarma.Models
         public int CampaignId { get; set; }
         [ForeignKey("CampaignId")]
         public Campanna Campanna { get; set; }
-        public int Puntos { get; set; }
+        public double Puntos { get; set; }
         public int UnidadesMaximas { get; set; }
         public string Laboratorio { get; set; }
     }

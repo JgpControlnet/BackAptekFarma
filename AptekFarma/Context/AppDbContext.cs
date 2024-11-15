@@ -17,7 +17,7 @@ namespace _AptekFarma.Context
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Campanna> Campanna { get; set; }
         public DbSet<FormularioVenta> FormularioVenta { get; set; }
-        public DbSet<ProdcutoCampanna> ProdcutoCampanna { get; set; }
+        public DbSet<ProductoCampanna> ProductoCampanna { get; set; }
         public DbSet<ProductVenta> ProductVenta { get; set; }
 
 

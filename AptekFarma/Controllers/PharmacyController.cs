@@ -53,8 +53,6 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetPharmacies([FromBody] PharmacyFilterDTO filtro)
         {
             var pharmacies = await _context.Pharmacy
-                .Include(x => x.Localidad)
-                .Include(x => x.Provincia)
                 .ToListAsync();
 
             if (filtro.Todas)

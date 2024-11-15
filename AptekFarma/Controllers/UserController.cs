@@ -86,19 +86,15 @@ namespace _AptekFarma.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
-            // Try to find user by email
             var user = await _userManager.FindByEmailAsync(model.Username);
 
-            // If not found by email, try to find by username
             if (user == null)
             {
                 user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == model.Username);
             }
 
-            // If user is found
             if (user != null)
             {
-                // Attempt to sign in the user
                 var result = await _signInManager.PasswordSignInAsync(user, model.Password, false, false);
 
                 if (result.Succeeded)
@@ -109,7 +105,7 @@ namespace _AptekFarma.Controllers
                     user.RememberMe = model.RemembeMe;
                     _context.Update(user);
                     await _context.SaveChangesAsync();
-                    return Ok(new { Token, rol = rol[0], user.Id, nombre=user.nombre+" "+user.apellidos });
+                    return Ok(new { Token, rol = rol[0], user.Id, nombre=user.nombre+" "+user.apellidos, user.Points });
 
                 }
 

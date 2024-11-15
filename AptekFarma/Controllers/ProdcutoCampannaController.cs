@@ -25,7 +25,7 @@ namespace _AptekFarma.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class ProductsController : ControllerBase
+    public class ProductoCampannaController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Roles> _roleManager;
@@ -33,7 +33,7 @@ namespace _AptekFarma.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-        public ProductsController(
+        public ProductoCampannaController(
             UserManager<User> userManager,
             RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
@@ -50,41 +50,54 @@ namespace _AptekFarma.Controllers
         [HttpPost("GetAllProducts")]
         public async Task<IActionResult> GetProducts([FromBody] ProductFilterDTO filtro)
         {
-            var products = await _context.ProductVenta.ToListAsync();
+            // Incluye la relación de campaña al obtener los productos
+            var query = _context.ProductoCampanna
+                .Include(p => p.Campanna)
+                .AsQueryable();
 
             if (filtro.Todas)
-                return Ok(products);
+                return Ok(await query.ToListAsync());
 
             if (filtro != null)
             {
-
-
+                // Filtra por nombre
                 if (!string.IsNullOrEmpty(filtro.Nombre))
                 {
-                    products = products.Where(x => x.Nombre.ToLower().Contains(filtro.Nombre.ToLower())).ToList();
+                    query = query.Where(x => x.Nombre.ToLower().Contains(filtro.Nombre.ToLower()));
                 }
 
+                // Filtra por precio
                 if (filtro.Precio > 0)
                 {
-                    products = products.Where(x => x.PuntosNeceseraios == filtro.Precio).ToList();
+                    query = query.Where(x => x.Puntos == filtro.Precio);
+                }
+
+                // Filtra por campaña
+                if (filtro.CampannaId > 0)
+                {
+                    query = query.Where(x => x.CampaignId == filtro.CampannaId);
                 }
             }
 
             // Paginación
-            int totalItems = products.Count;
-            var paginatedProducts = products
+            var paginatedProducts = await query
                 .Skip((filtro.PageNumber - 1) * filtro.PageSize)
                 .Take(filtro.PageSize)
-                .ToList();
+                .ToListAsync();
 
-            return Ok(paginatedProducts);
+            return Ok(new
+            {
+               
+                Products = paginatedProducts
+            });
         }
+
 
         [HttpGet("GetProductById")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == id);
-
+            var product = await _context.ProductoCampanna.Include(x => x.Campanna).FirstOrDefaultAsync(x => x.Id == id);
+               
             if (product == null)
             {
                 return NotFound(new { message = "No se ha encontrado Producto" });
@@ -94,66 +107,77 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPost("AddProduct")]
-        public async Task<IActionResult> AddProduct([FromBody] ProductDTO dto)
+        public async Task<IActionResult> AddProduct([FromBody] ProductoCampannaDTO dto)
         {
-            var product = new ProductVenta
+            var product = new ProductoCampanna
             {
-                Nombre = dto.Nombre,
-                Imagen = dto.Imagen,
-                PuntosNeceseraios = dto.PuntosNeceseraios
+                Nombre = dto.nombre,
+                Codigo = dto.codigo,
+                CampaignId = dto.campaignId,
+                Campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == dto.campaignId),
+                Puntos = dto.puntos,
+                UnidadesMaximas = dto.unidadesMaximas,
+                Laboratorio = dto.laboratorio
             };
 
-            await _context.ProductVenta.AddAsync(product);
+            await _context.ProductoCampanna.AddAsync(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductoCampanna.ToListAsync();
             return Ok(new { message = "Producto creado correctamente", products });
         }
 
         [HttpPut("UpdateProduct")]
-        public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductDTO dto)
+        public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductoCampannaDTO dto)
         {
-            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == productId);
+            var product = await _context.ProductoCampanna.FirstOrDefaultAsync(x => x.Id == productId);
 
             if (product == null)
             {
                 return NotFound(new { message = "Producto no encontrado" });
             }
 
-            product.Nombre = dto.Nombre;
-            product.Imagen = dto.Imagen;
-            product.PuntosNeceseraios = dto.PuntosNeceseraios;
+            product.Nombre = dto.nombre;
+            product.Codigo = dto.codigo;
+            product.CampaignId = dto.campaignId;
+            product.Campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == dto.campaignId);
+            product.Puntos = dto.puntos;
+            product.UnidadesMaximas = dto.unidadesMaximas;
+            product.Laboratorio = dto.laboratorio;
 
-            _context.ProductVenta.Update(product);
+          
+
+
+            _context.ProductoCampanna.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductoCampanna.ToListAsync();
             return Ok(new { message = "Producto modificado correctamente",products });
         }
 
         [HttpDelete("DeleteProduct")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == id);
+            var product = await _context.ProductoCampanna.FirstOrDefaultAsync(x => x.Id == id);
 
             if (product == null)
             {
                 return NotFound(new { message = "No se ha encontrado Producto" });
             }
 
-            _context.ProductVenta.Remove(product);
+            _context.ProductoCampanna.Remove(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductoCampanna.ToListAsync();
             return Ok(new { message = "Producto eliminado correctamente", products  });
         }
 
         [HttpPost("AddProductsExcel")]
-        public async Task<IActionResult> AddProductsExcel([FromForm] FileDTO dto)
+        public async Task<IActionResult> AddProductsExcel([FromForm] FileDTO dto, int idCampanna)
         {
             if (dto.file?.Length == 0 || Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx")
             {
                 return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
             }
 
-            var products = new List<ProductVenta>();
+            var products = new List<ProductoCampanna>();
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
@@ -169,21 +193,26 @@ namespace _AptekFarma.Controllers
 
                     for (int row = 2; row <= rowCount; row++)
                     {
-                        products.Add(new ProductVenta
+                        products.Add(new ProductoCampanna
                         {
-                            Nombre = worksheet.Cells[row, 2]?.Text?.Trim(),
-                            Imagen = worksheet.Cells[row, 3]?.Text?.Trim(),
-                            PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 4]?.Text, out decimal precio) ? precio : 0
+                            Codigo = int.Parse(worksheet.Cells[row, 1].Value.ToString()),
+                            Nombre = worksheet.Cells[row, 2].Value.ToString(),
+                            CampaignId = idCampanna,
+                            Campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == idCampanna),
+                            Puntos = double.Parse(worksheet.Cells[row, 3].Value.ToString()),
+                            UnidadesMaximas = int.Parse(worksheet.Cells[row, 4].Value.ToString()),
+                            Laboratorio = worksheet.Cells[row, 5].Value.ToString()
+                           
                         });
                     }
                 }
             }
 
             // Guardar en la base de datos
-            _context.ProductVenta.AddRange(products);
+            _context.ProductoCampanna.AddRange(products);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Productos importados exitosamente.", products });
+            return Ok(new { message = "Productos campañana importados exitosamente.", products });
         }
 
     }
