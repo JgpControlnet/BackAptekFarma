@@ -19,6 +19,7 @@ using AptekFarma.Models;
 using OfficeOpenXml;
 using AptekFarma.Controllers;
 using AptekFarma.DTO;
+using System.Globalization;
 
 
 namespace _AptekFarma.Controllers
@@ -56,7 +57,7 @@ namespace _AptekFarma.Controllers
                 .Include(x => x.Provincia)
                 .ToListAsync();
 
-            if(filtro.Todas)
+            if (filtro.Todas)
                 return Ok(pharmacies);
 
             if (filtro != null)
@@ -74,12 +75,12 @@ namespace _AptekFarma.Controllers
 
             // Paginación
             int totalItems = pharmacies.Count;
-                var paginatedPharmacies = pharmacies
-                .Skip((filtro.PageNumber - 1) * filtro.PageSize)
-                .Take(filtro.PageSize)
-                .ToList();
-                return Ok(paginatedPharmacies);
-            
+            var paginatedPharmacies = pharmacies
+            .Skip((filtro.PageNumber - 1) * filtro.PageSize)
+            .Take(filtro.PageSize)
+            .ToList();
+            return Ok(paginatedPharmacies);
+
         }
 
         [HttpGet("GetPharmacyById")]
@@ -112,7 +113,7 @@ namespace _AptekFarma.Controllers
             await _context.SaveChangesAsync();
             var pharmacies = await _context.Pharmacies.ToListAsync();
 
-            return Ok(new { message = "Farmacia creada correctamente" , pharmacies });
+            return Ok(new { message = "Farmacia creada correctamente", pharmacies });
         }
 
         [HttpPut("UpdatePharmacy")]
@@ -181,16 +182,20 @@ namespace _AptekFarma.Controllers
                 {
                     ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
                     int rowCount = worksheet.Dimension.Rows;
-                    bool localidadIncorrecta = false;
-                    bool provinciaIncorrecta = false;
+                   
 
                     for (int row = 2; row <= rowCount; row++)
                     {
                         Localidad localidad = null;
-                        if(worksheet.Cells[row, 4].Value != null)
+                        bool localidadIncorrecta = false;
+                        bool provinciaIncorrecta = false;
+                        if (worksheet.Cells[row, 4].Value != null)
                         {
-                            localidad = _context.Localidades.FirstOrDefault(x => x.Nombre == worksheet.Cells[row, 4].Value.ToString());
-                            if (localidad == null) {
+                            localidad = _context.Localidades
+                                .AsEnumerable()
+                                .FirstOrDefault(x => NormalizeString(x.Nombre) == NormalizeString(worksheet.Cells[row, 4].Value.ToString()));
+                            if (localidad == null)
+                            {
                                 localidadIncorrecta = true;
                             }
 
@@ -199,7 +204,9 @@ namespace _AptekFarma.Controllers
                         Provincia provincia = null;
                         if (worksheet.Cells[row, 5].Value != null)
                         {
-                            provincia = _context.Provincias.FirstOrDefault(x => x.Nombre == worksheet.Cells[row, 5].Value.ToString());
+                            provincia = _context.Provincias
+                                .AsEnumerable()
+                                .FirstOrDefault(x => NormalizeString(x.Nombre) == NormalizeString(worksheet.Cells[row, 5].Value.ToString()));
                             if (provincia == null)
                             {
                                 provinciaIncorrecta = true;
@@ -210,7 +217,7 @@ namespace _AptekFarma.Controllers
                         if (localidadIncorrecta || provinciaIncorrecta)
                         {
                             List<string> errores = new List<string>();
-                            if(localidadIncorrecta) 
+                            if (localidadIncorrecta)
                             {
                                 errores.Add("No existe la localidad");
                             }
@@ -263,7 +270,18 @@ namespace _AptekFarma.Controllers
 
             pharmacies = await _context.Pharmacies.ToListAsync();
 
-            return Ok(new { message = "Importado Correctamente" , pharmacies });
+            return Ok(new { message = "Importado Correctamente", pharmacies });
+        }
+
+        string NormalizeString(string input)
+        {
+            if (input == null) return null;
+
+            return string.Concat(input
+                .Trim() 
+                .ToLowerInvariant() // Convierte a minúsculas 
+                .Normalize(NormalizationForm.FormD) // Normaliza la cadena para dividir caracteres con tildes en base + tilde, á en a + ´
+                .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)); // Remueve los caracteres de marca de tildes
         }
     }
 }
