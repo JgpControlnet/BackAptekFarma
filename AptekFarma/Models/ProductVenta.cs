@@ -3,14 +3,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptekFarma.Models
 {
-    public class Products
+    [Table("producto_venta")]
+    public class ProductVenta
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public string CodigoNacional { get; set; }
         public string Nombre { get; set; }
+        public int CodProducto{ get; set; }
         public string Imagen { get; set; }
-        public int Precio { get; set; }
+        public decimal PuntosNeceseraios { get; set; }
+        public int CantidadMax { get; set; }
+        public string Laboratorio { get; set; }
+
     }
 }

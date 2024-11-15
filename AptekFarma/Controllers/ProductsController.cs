@@ -50,17 +50,14 @@ namespace _AptekFarma.Controllers
         [HttpPost("GetAllProducts")]
         public async Task<IActionResult> GetProducts([FromBody] ProductFilterDTO filtro)
         {
-            var products = await _context.Products.ToListAsync();
+            var products = await _context.ProductVenta.ToListAsync();
 
             if (filtro.Todas)
                 return Ok(products);
 
             if (filtro != null)
             {
-                if (!string.IsNullOrEmpty(filtro.CodigoNacional))
-                {
-                    products = products.Where(x => x.CodigoNacional.ToLower().Contains(filtro.CodigoNacional.ToLower())).ToList();
-                }
+
 
                 if (!string.IsNullOrEmpty(filtro.Nombre))
                 {
@@ -69,7 +66,7 @@ namespace _AptekFarma.Controllers
 
                 if (filtro.Precio > 0)
                 {
-                    products = products.Where(x => x.Precio == filtro.Precio).ToList();
+                    products = products.Where(x => x.PuntosNeceseraios == filtro.Precio).ToList();
                 }
             }
 
@@ -86,7 +83,7 @@ namespace _AptekFarma.Controllers
         [HttpGet("GetProductById")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == id);
+            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == id);
 
             if (product == null)
             {
@@ -99,54 +96,52 @@ namespace _AptekFarma.Controllers
         [HttpPost("AddProduct")]
         public async Task<IActionResult> AddProduct([FromBody] ProductDTO dto)
         {
-            var product = new Products
+            var product = new ProductVenta
             {
-                CodigoNacional = dto.CodigoNacional,
                 Nombre = dto.Nombre,
                 Imagen = dto.Imagen,
-                Precio = dto.Precio
+                PuntosNeceseraios = dto.PuntosNeceseraios
             };
 
-            await _context.Products.AddAsync(product);
+            await _context.ProductVenta.AddAsync(product);
             await _context.SaveChangesAsync();
-            var products = await _context.Products.ToListAsync();
+            var products = await _context.ProductVenta.ToListAsync();
             return Ok(new { message = "Producto creado correctamente", products });
         }
 
         [HttpPut("UpdateProduct")]
         public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductDTO dto)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == productId);
+            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == productId);
 
             if (product == null)
             {
                 return NotFound(new { message = "Producto no encontrado" });
             }
 
-            product.CodigoNacional = dto.CodigoNacional;
             product.Nombre = dto.Nombre;
             product.Imagen = dto.Imagen;
-            product.Precio = dto.Precio;
+            product.PuntosNeceseraios = dto.PuntosNeceseraios;
 
-            _context.Products.Update(product);
+            _context.ProductVenta.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.Products.ToListAsync();
+            var products = await _context.ProductVenta.ToListAsync();
             return Ok(new { message = "Producto modificado correctamente",products });
         }
 
         [HttpDelete("DeleteProduct")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == id);
+            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == id);
 
             if (product == null)
             {
                 return NotFound(new { message = "No se ha encontrado Producto" });
             }
 
-            _context.Products.Remove(product);
+            _context.ProductVenta.Remove(product);
             await _context.SaveChangesAsync();
-            var products = await _context.Products.ToListAsync();
+            var products = await _context.ProductVenta.ToListAsync();
             return Ok(new { message = "Producto eliminado correctamente", products  });
         }
 
@@ -158,7 +153,7 @@ namespace _AptekFarma.Controllers
                 return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
             }
 
-            var products = new List<Products>();
+            var products = new List<ProductVenta>();
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
@@ -174,19 +169,18 @@ namespace _AptekFarma.Controllers
 
                     for (int row = 2; row <= rowCount; row++)
                     {
-                        products.Add(new Products
+                        products.Add(new ProductVenta
                         {
-                            CodigoNacional = worksheet.Cells[row, 1]?.Text?.Trim(),
                             Nombre = worksheet.Cells[row, 2]?.Text?.Trim(),
                             Imagen = worksheet.Cells[row, 3]?.Text?.Trim(),
-                            Precio = int.TryParse(worksheet.Cells[row, 4]?.Text, out int precio) ? precio : 0
+                            PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 4]?.Text, out decimal precio) ? precio : 0
                         });
                     }
                 }
             }
 
             // Guardar en la base de datos
-            _context.Products.AddRange(products);
+            _context.ProductVenta.AddRange(products);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Productos importados exitosamente.", products });

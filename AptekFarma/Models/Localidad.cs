@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptekFarma.Models
 {
+    [Table("localidad")]
     public class Localidad
     {
         [Key]

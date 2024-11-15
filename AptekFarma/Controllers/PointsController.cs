@@ -45,39 +45,39 @@ namespace _AptekFarma.Controllers
             _configuration = configuration;
         }
 
-        [HttpPut("BuyProduct")]
-        public async Task<IActionResult> BuyProduct([FromBody] string userId, int productId)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
-            if (user == null)
-            {
-                return BadRequest(new { message = "Usuario no encontrado" });
-            }
+        //[HttpPut("BuyProduct")]
+        //public async Task<IActionResult> BuyProduct([FromBody] string userId, int productId)
+        //{
+        //    var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+        //    if (user == null)
+        //    {
+        //        return BadRequest(new { message = "Usuario no encontrado" });
+        //    }
 
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == productId);
-            if (product == null)
-            {
-                return BadRequest(new { message = "Producto no encontrado" });
-            }
+        //    var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == productId);
+        //    if (product == null)
+        //    {
+        //        return BadRequest(new { message = "Producto no encontrado" });
+        //    }
 
-            if (product.Precio > user.Points)
-            {
-                return BadRequest(new { message = "Sin puntos suficientes" });
-            }
+        //    if (product.PuntosNeceseraios > user.Points)
+        //    {
+        //        return BadRequest(new { message = "Sin puntos suficientes" });
+        //    }
 
-            user.Points -= product.Precio;
-            var pointsRedeemed = new PointRedeemded();
-            pointsRedeemed.User = user;
-            pointsRedeemed.Product = product;
-            pointsRedeemed.Points = product.Precio;
-            pointsRedeemed.Fecha = DateTime.Now;
+        //    user.Points -= product.PuntosNeceseraios;
+        //    var pointsRedeemed = new PointRedeemded();
+        //    pointsRedeemed.User = user;
+        //    pointsRedeemed.Product = product;
+        //    pointsRedeemed.Points = product.PuntosNeceseraios;
+        //    pointsRedeemed.Fecha = DateTime.Now;
 
-            await _userManager.UpdateAsync(user);
-            await _context.PointsRedeemded.AddAsync(pointsRedeemed);
-            await _context.SaveChangesAsync();
+        //    await _userManager.UpdateAsync(user);
+        //    await _context.PointsRedeemded.AddAsync(pointsRedeemed);
+        //    await _context.SaveChangesAsync();
 
-            return Ok("Product bought successfully");
-        }
+        //    return Ok("Product bought successfully");
+        //}
 
         [HttpGet("GetUserPoints")]
         public async Task<IActionResult> GetUserPoints(string userId)
@@ -91,43 +91,43 @@ namespace _AptekFarma.Controllers
             return Ok(user.Points);
         }
 
-        [HttpGet("GetUserPointsHistory")]
-        public async Task<IActionResult> GetUserPointsHistory(string userId)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
-            if (user == null)
-            {
-                return BadRequest(new { message = "User not found" });
-            }
+        //[HttpGet("GetUserPointsHistory")]
+        //public async Task<IActionResult> GetUserPointsHistory(string userId)
+        //{
+        //    var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+        //    if (user == null)
+        //    {
+        //        return BadRequest(new { message = "User not found" });
+        //    }
 
-            var pointsEarnedHistory = await _context.PointsEarned
-                .Where(x => x.User.Id == userId)
-                .Select(x => new
-                {
-                    x.Id,
-                    x.Points,
-                    x.Fecha,
-                })
-                .ToListAsync();
+        //    var pointsEarnedHistory = await _context.PointsEarned
+        //        .Where(x => x.User.Id == userId)
+        //        .Select(x => new
+        //        {
+        //            x.Id,
+        //            x.Points,
+        //            x.Fecha,
+        //        })
+        //        .ToListAsync();
 
-            var pointsRedeemedHistory = await _context.PointsRedeemded
-                .Where(x => x.User.Id == userId)
-                .Select(x => new
-                {
-                    x.Id,
-                    x.Product,
-                    x.Points,
-                    x.Fecha,
-                })
-                .ToListAsync();
+        //    var pointsRedeemedHistory = await _context.PointsRedeemded
+        //        .Where(x => x.User.Id == userId)
+        //        .Select(x => new
+        //        {
+        //            x.Id,
+        //            x.Product,
+        //            x.Points,
+        //            x.Fecha,
+        //        })
+        //        .ToListAsync();
 
-            var pointsHistory = new
-            {
-                PointsEarnedHistory = pointsEarnedHistory,
-                PointsRedeemedHistory = pointsRedeemedHistory
-            };
+        //    var pointsHistory = new
+        //    {
+        //        PointsEarnedHistory = pointsEarnedHistory,
+        //        PointsRedeemedHistory = pointsRedeemedHistory
+        //    };
 
-            return Ok(pointsHistory);
-        }
+        //    return Ok(pointsHistory);
+        //}
     }
 }

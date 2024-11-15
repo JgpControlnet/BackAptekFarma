@@ -4,7 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptekFarma.Models
 {
-    public class PointEarned
+    [Table("formulario_venta")]
+    public class FormularioVenta
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -12,8 +13,9 @@ namespace AptekFarma.Models
         public string UserID { get; set; }
         [ForeignKey("UserID")]
         public User User { get; set; }
-        public int Points { get; set; }
-        public DateTime Fecha { get; set; }
-
+        public int ProductID { get; set; }
+        [ForeignKey("ProductID")]
+        public ProductVenta Product { get; set; }
+        public int Cantidad { get; set; }
     }
 }
