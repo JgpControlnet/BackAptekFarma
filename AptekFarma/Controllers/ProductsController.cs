@@ -47,10 +47,13 @@ namespace _AptekFarma.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet("GetAllProducts")]
-        public async Task<IActionResult> GetProducts([FromQuery] ProductFilterDTO filtro)
+        [HttpPost("GetAllProducts")]
+        public async Task<IActionResult> GetProducts([FromBody] ProductFilterDTO filtro)
         {
             var products = await _context.Products.ToListAsync();
+
+            if (filtro.Todas)
+                return Ok(products);
 
             if (filtro != null)
             {
@@ -106,7 +109,8 @@ namespace _AptekFarma.Controllers
 
             await _context.Products.AddAsync(product);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Producto creado correctamente" });
+            var products = await _context.Products.ToListAsync();
+            return Ok(new { message = "Producto creado correctamente", products });
         }
 
         [HttpPut("UpdateProduct")]
@@ -126,7 +130,8 @@ namespace _AptekFarma.Controllers
 
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Producto modificado correctamente" });
+            var products = await _context.Products.ToListAsync();
+            return Ok(new { message = "Producto modificado correctamente",products });
         }
 
         [HttpDelete("DeleteProduct")]
@@ -141,7 +146,8 @@ namespace _AptekFarma.Controllers
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Producto eliminado correctamente" });
+            var products = await _context.Products.ToListAsync();
+            return Ok(new { message = "Producto eliminado correctamente", products  });
         }
 
         [HttpPost("AddProductsExcel")]
@@ -183,7 +189,7 @@ namespace _AptekFarma.Controllers
             _context.Products.AddRange(products);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Productos importados exitosamente." });
+            return Ok(new { message = "Productos importados exitosamente.", products });
         }
 
     }

@@ -47,8 +47,8 @@ namespace _AptekFarma.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet("GetAllSales")]
-        public async Task<IActionResult> GetSales([FromQuery] SalesFilterDTO filtro)
+        [HttpPost("GetAllSales")]
+        public async Task<IActionResult> GetSales([FromBody] SalesFilterDTO filtro)
         {
             var sales = await _context.Sales
                 .Include(sale => sale.Campaign)

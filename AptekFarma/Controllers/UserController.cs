@@ -74,9 +74,9 @@ namespace _AptekFarma.Controllers
                 Pharmacy = _context.Pharmacies.FirstOrDefault(p => p.Id == dto.PharmacyId)
 
             };
-
+            
             await _userManager.CreateAsync(user, dto.Password);
-            await _userManager.AddToRoleAsync(user, dto.rol);
+            await _userManager.AddToRoleAsync(user, "Farma");
 
             return Ok(new { message = "Usuario creado correctamente" });
 
@@ -120,10 +120,10 @@ namespace _AptekFarma.Controllers
             return BadRequest(new { success = false, error = "La solicitud no fue exitosa." });
         }
 
-        // GET: api/Usuarios
-        [HttpGet("ListUsuario")]
+        // POST: api/Usuarios
+        [HttpPost("ListUsuario")]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsuarios([FromQuery] UserFilterDTO filtro)
+        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsuarios([FromBody] UserFilterDTO filtro)
         {
             var users = await _context.Users.Include(x => x.Pharmacy).ToListAsync();
             List<UserDTO> result = new List<UserDTO>();
@@ -344,11 +344,6 @@ namespace _AptekFarma.Controllers
             if (dto == null)
             {
                 return "No puede enviar el formulario vacio";
-            }
-
-            if (dto.rol != "Admin" && dto.rol != "Farma")
-            {
-                return "El rol debe ser 'Admin' o 'Farma'.";
             }
 
             string patternEmail = @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$";

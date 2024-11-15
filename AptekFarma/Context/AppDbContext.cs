@@ -20,6 +20,8 @@ namespace _AptekFarma.Context
         public DbSet<PointEarned> PointsEarned { get; set; }
         public DbSet<PointRedeemded> PointsRedeemded { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Localidad> Localidades { get; set; }
+        public DbSet<Provincia> Provincias { get; set; }    
 
     }
 }
