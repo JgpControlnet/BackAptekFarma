@@ -14,7 +14,7 @@ namespace _AptekFarma.Models
         public int? PharmacyID { get; set; }
         [ForeignKey("PharmacyID")]
         public Pharmacy? Pharmacy { get; set; }
-        public decimal Points { get; set; }
+        public int Points { get; set; }
         public bool RememberMe { get; set; }
     }
 }

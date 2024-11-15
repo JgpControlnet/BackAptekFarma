@@ -52,7 +52,7 @@ namespace _AptekFarma.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetPharmacies([FromBody] PharmacyFilterDTO filtro)
         {
-            var pharmacies = await _context.Pharmacies
+            var pharmacies = await _context.Pharmacy
                 .Include(x => x.Localidad)
                 .Include(x => x.Provincia)
                 .ToListAsync();
@@ -86,7 +86,7 @@ namespace _AptekFarma.Controllers
         [HttpGet("GetPharmacyById")]
         public async Task<IActionResult> GetPharmacyById(int id)
         {
-            var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == id);
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id);
 
             if (pharmacy == null)
             {
@@ -105,13 +105,13 @@ namespace _AptekFarma.Controllers
                 Nombre = pharmacyDTO.Nombre,
                 Direccion = pharmacyDTO.Direccion,
                 CP = pharmacyDTO.CP,
-                Localidad = _context.Localidades.FirstOrDefault(x => x.Nombre == pharmacyDTO.Localidad),
-                Provincia = _context.Provincias.FirstOrDefault(x => x.Nombre == pharmacyDTO.Provincia)
+                Localidad = pharmacyDTO.Localidad,
+                Provincia =  pharmacyDTO.Provincia
             };
 
-            await _context.Pharmacies.AddAsync(pharmacy);
+            await _context.Pharmacy.AddAsync(pharmacy);
             await _context.SaveChangesAsync();
-            var pharmacies = await _context.Pharmacies.ToListAsync();
+            var pharmacies = await _context.Pharmacy.ToListAsync();
 
             return Ok(new { message = "Farmacia creada correctamente", pharmacies });
         }
@@ -119,14 +119,12 @@ namespace _AptekFarma.Controllers
         [HttpPut("UpdatePharmacy")]
         public async Task<IActionResult> UpdatePharmacy(int pharmacyId, [FromBody] PharmacyDTO pharmacyDTO)
         {
-            var pharmacy = await _context.Pharmacies
+            var pharmacy = await _context.Pharmacy
                 .Include(x => x.Localidad)
                 .Include(x => x.Provincia)
                 .FirstOrDefaultAsync(x => x.Id == pharmacyId);
 
-            var localidad = _context.Localidades.FirstOrDefault(x => x.Nombre == pharmacyDTO.Localidad);
-            var provincia = _context.Provincias.FirstOrDefault(x => x.Nombre == pharmacyDTO.Provincia);
-
+          
             if (pharmacy == null)
             {
                 return NotFound(new { message = "No se ha encontrado Farmacia" });
@@ -135,12 +133,12 @@ namespace _AptekFarma.Controllers
             pharmacy.Nombre = pharmacyDTO.Nombre;
             pharmacy.Direccion = pharmacyDTO.Direccion;
             pharmacy.CP = pharmacyDTO.CP;
-            pharmacy.Provincia = provincia;
-            pharmacy.Localidad = localidad;
+            pharmacy.Provincia = pharmacyDTO.Provincia;
+            pharmacy.Localidad = pharmacyDTO.Localidad;
 
-            _context.Pharmacies.Update(pharmacy);
+            _context.Pharmacy.Update(pharmacy);
             await _context.SaveChangesAsync();
-            var pharmacies = await _context.Pharmacies.ToListAsync();
+            var pharmacies = await _context.Pharmacy.ToListAsync();
 
             return Ok(new { message = "Farmacia editada correctamente", pharmacies });
         }
@@ -148,16 +146,16 @@ namespace _AptekFarma.Controllers
         [HttpDelete("DeletePharmacy")]
         public async Task<IActionResult> DeletePharmacy(int id)
         {
-            var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == id);
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id);
 
             if (pharmacy == null)
             {
                 return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
-            _context.Pharmacies.Remove(pharmacy);
+            _context.Pharmacy.Remove(pharmacy);
             await _context.SaveChangesAsync();
-            var pharmacies = await _context.Pharmacies.ToListAsync();
+            var pharmacies = await _context.Pharmacy.ToListAsync();
             return Ok(new { message = "Importado Correctamente", pharmacies });
         }
 
@@ -189,29 +187,11 @@ namespace _AptekFarma.Controllers
                         Localidad localidad = null;
                         bool localidadIncorrecta = false;
                         bool provinciaIncorrecta = false;
-                        if (worksheet.Cells[row, 4].Value != null)
-                        {
-                            localidad = _context.Localidades
-                                .AsEnumerable()
-                                .FirstOrDefault(x => NormalizeString(x.Nombre) == NormalizeString(worksheet.Cells[row, 4].Value.ToString()));
-                            if (localidad == null)
-                            {
-                                localidadIncorrecta = true;
-                            }
-
-                        }
-
+                        localidadIncorrecta = true;
                         Provincia provincia = null;
-                        if (worksheet.Cells[row, 5].Value != null)
-                        {
-                            provincia = _context.Provincias
-                                .AsEnumerable()
-                                .FirstOrDefault(x => NormalizeString(x.Nombre) == NormalizeString(worksheet.Cells[row, 5].Value.ToString()));
-                            if (provincia == null)
-                            {
-                                provinciaIncorrecta = true;
-                            }
-                        }
+                        provinciaIncorrecta = true;
+                            
+                        
 
                         // Si no existe la población o la provincia, no se importa la farmacia
                         if (localidadIncorrecta || provinciaIncorrecta)
@@ -230,9 +210,9 @@ namespace _AptekFarma.Controllers
                             {
                                 Nombre = worksheet.Cells[row, 1].Value?.ToString() ?? string.Empty,
                                 Direccion = worksheet.Cells[row, 2].Value?.ToString() ?? string.Empty,
-                                CP = worksheet.Cells[row, 3].Value?.ToString() ?? string.Empty,
-                                Localidad = worksheet.Cells[row, 4].Value?.ToString() ?? string.Empty,
-                                Provincia = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty,
+                                CP = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty,
+                                Localidad = worksheet.Cells[row, 3].Value?.ToString() ?? string.Empty,
+                                Provincia = worksheet.Cells[row, 4].Value?.ToString() ?? string.Empty,
                                 Linea = row,
                                 Errores = errores
                             });
@@ -244,9 +224,9 @@ namespace _AptekFarma.Controllers
                         {
                             Nombre = worksheet.Cells[row, 1].Value?.ToString() ?? string.Empty,
                             Direccion = worksheet.Cells[row, 2].Value?.ToString() ?? string.Empty,
-                            CP = worksheet.Cells[row, 3].Value?.ToString() ?? string.Empty,
-                            LocalidadID = localidad?.Id,
-                            ProvinciaID = provincia?.Id
+                            CP = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty,
+                            Localidad = worksheet.Cells[row, 3].Value?.ToString() ?? string.Empty,
+                            Provincia = worksheet.Cells[row, 4].Value?.ToString() ?? string.Empty,
                         };
 
                         //await _context.Pharmacies.AddAsync(pharmacy);
@@ -264,11 +244,11 @@ namespace _AptekFarma.Controllers
                 return BadRequest(new { message = "Se han encontrado errores", errors });
             }
 
-            await _context.Pharmacies.AddRangeAsync(pharmacies);
+            await _context.Pharmacy.AddRangeAsync(pharmacies);
 
             await _context.SaveChangesAsync();
 
-            pharmacies = await _context.Pharmacies.ToListAsync();
+            pharmacies = await _context.Pharmacy.ToListAsync();
 
             return Ok(new { message = "Importado Correctamente", pharmacies });
         }

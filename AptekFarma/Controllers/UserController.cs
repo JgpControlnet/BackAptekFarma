@@ -71,7 +71,7 @@ namespace _AptekFarma.Controllers
                 fecha_nacimiento = dto.FechaNacimiento.ToString(),
                 Email = dto.Email,
                 PhoneNumber = dto.PhoneNumber,
-                Pharmacy = _context.Pharmacies.FirstOrDefault(p => p.Id == dto.PharmacyId)
+                Pharmacy = _context.Pharmacy.FirstOrDefault(p => p.Id == dto.PharmacyId)
 
             };
             

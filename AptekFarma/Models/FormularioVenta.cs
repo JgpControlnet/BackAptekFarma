@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptekFarma.Models
 {
+    [Table("formulario_venta")]
     public class FormularioVenta
     {
         [Key]
@@ -14,7 +15,7 @@ namespace AptekFarma.Models
         public User User { get; set; }
         public int ProductID { get; set; }
         [ForeignKey("ProductID")]
-        public Products Product { get; set; }
+        public ProductVenta Product { get; set; }
         public int Cantidad { get; set; }
     }
 }

@@ -12,13 +12,20 @@ namespace _AptekFarma.Context
             
         }
 
-        public DbSet<Products> Products { get; set; }
-        public DbSet<Pharmacy> Pharmacies { get; set; }
-        public DbSet<PointEarned> PointsEarned { get; set; }
-        public DbSet<PointRedeemded> PointsRedeemded { get; set; }
+        
+        public DbSet<Pharmacy> Pharmacy { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<Localidad> Localidades { get; set; }
-        public DbSet<Provincia> Provincias { get; set; }    
+        public DbSet<Campanna> Campanna { get; set; }
+        public DbSet<FormularioVenta> FormularioVenta { get; set; }
+        public DbSet<ProdcutoCampanna> ProdcutoCampanna { get; set; }
+        public DbSet<ProductVenta> ProductVenta { get; set; }
+
+
+
+
+
+        // public DbSet<Localidad> Localidades { get; set; }
+        // public DbSet<Provincia> Provincias { get; set; }    
 
     }
 }
