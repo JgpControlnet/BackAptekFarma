@@ -19,6 +19,7 @@ namespace _AptekFarma.Context
         public DbSet<FormularioVenta> FormularioVenta { get; set; }
         public DbSet<ProdcutoCampanna> ProdcutoCampanna { get; set; }
         public DbSet<ProductVenta> ProductVenta { get; set; }
+        public DbSet<VentaPuntos> VentaPuntos { get; set; }
 
 
 

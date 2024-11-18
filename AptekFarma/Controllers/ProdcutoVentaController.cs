@@ -25,7 +25,7 @@ namespace _AptekFarma.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class ProductsController : ControllerBase
+    public class ProdcutoVentaController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Roles> _roleManager;
@@ -33,7 +33,7 @@ namespace _AptekFarma.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-        public ProductsController(
+        public ProdcutoVentaController(
             UserManager<User> userManager,
             RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
@@ -64,9 +64,9 @@ namespace _AptekFarma.Controllers
                     products = products.Where(x => x.Nombre.ToLower().Contains(filtro.Nombre.ToLower())).ToList();
                 }
 
-                if (filtro.Precio > 0)
+                if (filtro.PuntosNeceseraios > 0)
                 {
-                    products = products.Where(x => x.PuntosNeceseraios == filtro.Precio).ToList();
+                    products = products.Where(x => x.PuntosNeceseraios == filtro.PuntosNeceseraios).ToList();
                 }
             }
 
@@ -99,8 +99,11 @@ namespace _AptekFarma.Controllers
             var product = new ProductVenta
             {
                 Nombre = dto.Nombre,
+                CodProducto = dto.CodProducto,
                 Imagen = dto.Imagen,
-                PuntosNeceseraios = dto.PuntosNeceseraios
+                PuntosNeceseraios = dto.PuntosNeceseraios,
+                CantidadMax = dto.CantidadMax,
+                Laboratorio = dto.Laboratorio
             };
 
             await _context.ProductVenta.AddAsync(product);
@@ -171,9 +174,11 @@ namespace _AptekFarma.Controllers
                     {
                         products.Add(new ProductVenta
                         {
-                            Nombre = worksheet.Cells[row, 2]?.Text?.Trim(),
-                            Imagen = worksheet.Cells[row, 3]?.Text?.Trim(),
-                            PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 4]?.Text, out decimal precio) ? precio : 0
+                            CodProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0,
+                            Nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty,
+                            PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0,
+                            CantidadMax = int.TryParse(worksheet.Cells[row, 4]?.Text.Split(",")[0], out int cantidad) ? cantidad : 0,
+                            Laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty
                         });
                     }
                 }
@@ -182,6 +187,8 @@ namespace _AptekFarma.Controllers
             // Guardar en la base de datos
             _context.ProductVenta.AddRange(products);
             await _context.SaveChangesAsync();
+
+            products = await _context.ProductVenta.ToListAsync();
 
             return Ok(new { message = "Productos importados exitosamente.", products });
         }
