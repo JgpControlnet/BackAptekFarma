@@ -5,7 +5,7 @@
 
         public int idProducto { get; set; }
         public int cantidad { get; set; }
-        public int idUsuario { get; set; }
+        public string idUsuario { get; set; }
         
     }
 }

@@ -139,7 +139,8 @@ namespace _AptekFarma.Controllers
                         User = _context.Users
                     .Include(u => u.Pharmacy)
                     .Where(u => u.Id == ventas.UserID)
-                    .Select(u => new {
+                    .Select(u => new
+                    {
                         u.nombre,
                         u.apellidos,
                         u.Pharmacy.Nombre
@@ -147,7 +148,8 @@ namespace _AptekFarma.Controllers
                         Product = ventas.Product,
                         Cantidad = ventas.Cantidad,
                         PuntosTotales = ventas.PuntosTotales,
-                        FechaCompra = ventas.FechaCompra)
+                        FechaCompra = ventas.FechaCompra
+                    })
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (venta == null)
@@ -181,8 +183,11 @@ namespace _AptekFarma.Controllers
                 FechaCompra = DateTime.Now
             };
 
+            product.CantidadMax -= dto.cantidad;
 
+            _context.ProductVenta.Update(product);
             await _context.VentaPuntos.AddAsync(venta);
+            
             await _context.SaveChangesAsync();
             
             return Ok(new { message = "Compra realizada correctamente" });
