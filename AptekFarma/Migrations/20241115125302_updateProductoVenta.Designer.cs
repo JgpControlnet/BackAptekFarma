@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using _AptekFarma.Context;
 
@@ -10,9 +11,11 @@ using _AptekFarma.Context;
 namespace AptekFarma.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241115125302_updateProductoVenta")]
+    partial class updateProductoVenta
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,6 +107,39 @@ namespace AptekFarma.Migrations
                     b.ToTable("pharmacy");
                 });
 
+            modelBuilder.Entity("AptekFarma.Models.ProdcutoCampanna", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("CampaignId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Codigo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Laboratorio")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Puntos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnidadesMaximas")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("producto_campanna");
+                });
+
             modelBuilder.Entity("AptekFarma.Models.ProductVenta", b =>
                 {
                     b.Property<int>("Id")
@@ -135,39 +171,6 @@ namespace AptekFarma.Migrations
                     b.ToTable("producto_venta");
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.ProductoCampanna", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("CampaignId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Codigo")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Laboratorio")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<double>("Puntos")
-                        .HasColumnType("double");
-
-                    b.Property<int>("UnidadesMaximas")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CampaignId");
-
-                    b.ToTable("producto_campanna");
-                });
-
             modelBuilder.Entity("AptekFarma.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -188,37 +191,6 @@ namespace AptekFarma.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RefreshTokens");
-                });
-
-            modelBuilder.Entity("AptekFarma.Models.VentaPuntos", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("Cantidad")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("FechaCompra")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("ProductID")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("PuntosTotales")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("UserID")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("ventas_puntos");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -459,7 +431,7 @@ namespace AptekFarma.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.ProductoCampanna", b =>
+            modelBuilder.Entity("AptekFarma.Models.ProdcutoCampanna", b =>
                 {
                     b.HasOne("AptekFarma.Models.Campanna", "Campanna")
                         .WithMany()
@@ -468,25 +440,6 @@ namespace AptekFarma.Migrations
                         .IsRequired();
 
                     b.Navigation("Campanna");
-                });
-
-            modelBuilder.Entity("AptekFarma.Models.VentaPuntos", b =>
-                {
-                    b.HasOne("AptekFarma.Models.ProductVenta", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("_AptekFarma.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

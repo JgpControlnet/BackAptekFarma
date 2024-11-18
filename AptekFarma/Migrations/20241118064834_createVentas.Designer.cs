@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using _AptekFarma.Context;
 
@@ -10,9 +11,11 @@ using _AptekFarma.Context;
 namespace AptekFarma.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241118064834_createVentas")]
+    partial class createVentas
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,6 +107,39 @@ namespace AptekFarma.Migrations
                     b.ToTable("pharmacy");
                 });
 
+            modelBuilder.Entity("AptekFarma.Models.ProdcutoCampanna", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("CampaignId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Codigo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Laboratorio")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Puntos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnidadesMaximas")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("producto_campanna");
+                });
+
             modelBuilder.Entity("AptekFarma.Models.ProductVenta", b =>
                 {
                     b.Property<int>("Id")
@@ -133,39 +169,6 @@ namespace AptekFarma.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("producto_venta");
-                });
-
-            modelBuilder.Entity("AptekFarma.Models.ProductoCampanna", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("CampaignId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Codigo")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Laboratorio")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<double>("Puntos")
-                        .HasColumnType("double");
-
-                    b.Property<int>("UnidadesMaximas")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CampaignId");
-
-                    b.ToTable("producto_campanna");
                 });
 
             modelBuilder.Entity("AptekFarma.Models.RefreshToken", b =>
@@ -459,7 +462,7 @@ namespace AptekFarma.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AptekFarma.Models.ProductoCampanna", b =>
+            modelBuilder.Entity("AptekFarma.Models.ProdcutoCampanna", b =>
                 {
                     b.HasOne("AptekFarma.Models.Campanna", "Campanna")
                         .WithMany()

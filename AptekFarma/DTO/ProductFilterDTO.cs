@@ -3,6 +3,7 @@
     public class ProductFilterDTO
     {
         public string? Nombre { get; set; }
+        public int PuntosNeceseraios { get; set; } = 0;
         public int Precio { get; set; } = 0;
         public int CampannaId { get; set; }
         public int PageNumber { get; set; } = 1;
