@@ -25,11 +25,7 @@ namespace _AptekFarma.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-<<<<<<<< HEAD:AptekFarma/Controllers/ProdcutoCampannaController.cs
     public class ProductoCampannaController : ControllerBase
-========
-    public class ProdcutoVentaController : ControllerBase
->>>>>>>> Ventas:AptekFarma/Controllers/ProdcutoVentaController.cs
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Roles> _roleManager;
@@ -37,11 +33,7 @@ namespace _AptekFarma.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-<<<<<<<< HEAD:AptekFarma/Controllers/ProdcutoCampannaController.cs
         public ProductoCampannaController(
-========
-        public ProdcutoVentaController(
->>>>>>>> Ventas:AptekFarma/Controllers/ProdcutoVentaController.cs
             UserManager<User> userManager,
             RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
@@ -74,7 +66,6 @@ namespace _AptekFarma.Controllers
                     query = query.Where(x => x.Nombre.ToLower().Contains(filtro.Nombre.ToLower()));
                 }
 
-<<<<<<<< HEAD:AptekFarma/Controllers/ProdcutoCampannaController.cs
                 // Filtra por precio
                 if (filtro.Precio > 0)
                 {
@@ -85,11 +76,6 @@ namespace _AptekFarma.Controllers
                 if (filtro.CampannaId > 0)
                 {
                     query = query.Where(x => x.CampaignId == filtro.CampannaId);
-========
-                if (filtro.PuntosNeceseraios > 0)
-                {
-                    products = products.Where(x => x.PuntosNeceseraios == filtro.PuntosNeceseraios).ToList();
->>>>>>>> Ventas:AptekFarma/Controllers/ProdcutoVentaController.cs
                 }
             }
 
@@ -101,7 +87,7 @@ namespace _AptekFarma.Controllers
 
             return Ok(new
             {
-               
+
                 Products = paginatedProducts
             });
         }
@@ -111,7 +97,7 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetProductById(int id)
         {
             var product = await _context.ProductoCampanna.Include(x => x.Campanna).FirstOrDefaultAsync(x => x.Id == id);
-               
+
             if (product == null)
             {
                 return NotFound(new { message = "No se ha encontrado Producto" });
@@ -125,7 +111,6 @@ namespace _AptekFarma.Controllers
         {
             var product = new ProductoCampanna
             {
-<<<<<<<< HEAD:AptekFarma/Controllers/ProdcutoCampannaController.cs
                 Nombre = dto.nombre,
                 Codigo = dto.codigo,
                 CampaignId = dto.campaignId,
@@ -133,14 +118,6 @@ namespace _AptekFarma.Controllers
                 Puntos = dto.puntos,
                 UnidadesMaximas = dto.unidadesMaximas,
                 Laboratorio = dto.laboratorio
-========
-                Nombre = dto.Nombre,
-                CodProducto = dto.CodProducto,
-                Imagen = dto.Imagen,
-                PuntosNeceseraios = dto.PuntosNeceseraios,
-                CantidadMax = dto.CantidadMax,
-                Laboratorio = dto.Laboratorio
->>>>>>>> Ventas:AptekFarma/Controllers/ProdcutoVentaController.cs
             };
 
             await _context.ProductoCampanna.AddAsync(product);
@@ -167,13 +144,13 @@ namespace _AptekFarma.Controllers
             product.UnidadesMaximas = dto.unidadesMaximas;
             product.Laboratorio = dto.laboratorio;
 
-          
+
 
 
             _context.ProductoCampanna.Update(product);
             await _context.SaveChangesAsync();
             var products = await _context.ProductoCampanna.ToListAsync();
-            return Ok(new { message = "Producto modificado correctamente",products });
+            return Ok(new { message = "Producto modificado correctamente", products });
         }
 
         [HttpDelete("DeleteProduct")]
@@ -189,7 +166,7 @@ namespace _AptekFarma.Controllers
             _context.ProductoCampanna.Remove(product);
             await _context.SaveChangesAsync();
             var products = await _context.ProductoCampanna.ToListAsync();
-            return Ok(new { message = "Producto eliminado correctamente", products  });
+            return Ok(new { message = "Producto eliminado correctamente", products });
         }
 
         [HttpPost("AddProductsExcel")]
@@ -218,7 +195,6 @@ namespace _AptekFarma.Controllers
                     {
                         products.Add(new ProductoCampanna
                         {
-<<<<<<<< HEAD:AptekFarma/Controllers/ProdcutoCampannaController.cs
                             Codigo = int.Parse(worksheet.Cells[row, 1].Value.ToString()),
                             Nombre = worksheet.Cells[row, 2].Value.ToString(),
                             CampaignId = idCampanna,
@@ -226,14 +202,7 @@ namespace _AptekFarma.Controllers
                             Puntos = double.Parse(worksheet.Cells[row, 3].Value.ToString()),
                             UnidadesMaximas = int.Parse(worksheet.Cells[row, 4].Value.ToString()),
                             Laboratorio = worksheet.Cells[row, 5].Value.ToString()
-                           
-========
-                            CodProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0,
-                            Nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty,
-                            PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0,
-                            CantidadMax = int.TryParse(worksheet.Cells[row, 4]?.Text.Split(",")[0], out int cantidad) ? cantidad : 0,
-                            Laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty
->>>>>>>> Ventas:AptekFarma/Controllers/ProdcutoVentaController.cs
+
                         });
                     }
                 }
@@ -243,13 +212,7 @@ namespace _AptekFarma.Controllers
             _context.ProductoCampanna.AddRange(products);
             await _context.SaveChangesAsync();
 
-<<<<<<<< HEAD:AptekFarma/Controllers/ProdcutoCampannaController.cs
             return Ok(new { message = "Productos campañana importados exitosamente.", products });
-========
-            products = await _context.ProductVenta.ToListAsync();
-
-            return Ok(new { message = "Productos importados exitosamente.", products });
->>>>>>>> Ventas:AptekFarma/Controllers/ProdcutoVentaController.cs
         }
 
     }
