@@ -25,7 +25,7 @@ namespace _AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class VentaPuntosController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
@@ -159,7 +159,7 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPost("ComprarProducto")]
-        public async Task<IActionResult> AddProduct([FromBody] CompraPuntosDTO dto)
+        public async Task<IActionResult> ComprarProducto([FromBody] CompraPuntosDTO dto)
         {
             var product = _context.ProductVenta.FirstOrDefault(x => x.Id == dto.idProducto);
 
