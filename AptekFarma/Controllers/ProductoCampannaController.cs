@@ -18,6 +18,7 @@ using System.Text;
 using AptekFarma.Models;
 using OfficeOpenXml;
 using AptekFarma.Controllers;
+using Humanizer;
 
 
 namespace _AptekFarma.Controllers
@@ -122,7 +123,8 @@ namespace _AptekFarma.Controllers
 
             await _context.ProductoCampanna.AddAsync(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductoCampanna.ToListAsync();
+            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId).ToListAsync();
+            
             return Ok(new { message = "Producto creado correctamente", products });
         }
 
@@ -149,7 +151,8 @@ namespace _AptekFarma.Controllers
 
             _context.ProductoCampanna.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductoCampanna.ToListAsync();
+            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId).ToListAsync();
+           
             return Ok(new { message = "Producto modificado correctamente", products });
         }
 
@@ -165,7 +168,8 @@ namespace _AptekFarma.Controllers
 
             _context.ProductoCampanna.Remove(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductoCampanna.ToListAsync();
+            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId).ToListAsync();
+            
             return Ok(new { message = "Producto eliminado correctamente", products });
         }
 

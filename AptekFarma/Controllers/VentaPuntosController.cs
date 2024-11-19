@@ -179,7 +179,7 @@ namespace _AptekFarma.Controllers
                 UserID = user.Id,
                 ProductID = product.Id,
                 Cantidad = dto.cantidad,
-                PuntosTotales = product.PuntosNeceseraios * dto.cantidad,
+                PuntosTotales = product.PuntosNecesarios * dto.cantidad,
                 FechaCompra = DateTime.Now
             };
 

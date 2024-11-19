@@ -3,7 +3,7 @@
     public class ProductFilterDTO
     {
         public string? nombre { get; set; }
-        public int puntosNeceseraios { get; set; } = 0;
+        public int puntosNecesarios { get; set; } = 0;
         public int precio { get; set; } = 0;
 
         //Se puede utilizar tanto para buscar productos de una campaña en especifico como para buscar productos de todas las campañas

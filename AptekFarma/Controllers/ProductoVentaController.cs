@@ -65,9 +65,9 @@ namespace _AptekFarma.Controllers
                     products = products.Where(x => x.Nombre.ToLower().Contains(filtro.nombre.ToLower())).ToList();
                 }
 
-                if (filtro.puntosNeceseraios > 0)
+                if (filtro.puntosNecesarios > 0)
                 {
-                    products = products.Where(x => x.PuntosNeceseraios == filtro.puntosNeceseraios).ToList();
+                    products = products.Where(x => x.PuntosNecesarios == filtro.puntosNecesarios).ToList();
                 }
             }
 
@@ -102,7 +102,7 @@ namespace _AptekFarma.Controllers
                 Nombre = dto.nombre,
                 CodProducto = dto.codProducto,
                 Imagen = dto.imagen,
-                PuntosNeceseraios = dto.puntosNeceseraios,
+                PuntosNecesarios = dto.puntosNecesarios,
                 CantidadMax = dto.cantidadMax,
                 Laboratorio = dto.laboratorio
             };
@@ -126,7 +126,7 @@ namespace _AptekFarma.Controllers
 
             product.Nombre = dto.nombre;
             product.Imagen = dto.imagen;
-            product.PuntosNeceseraios = dto.puntosNeceseraios;
+            product.PuntosNecesarios = dto.puntosNecesarios;
             product.CantidadMax = dto.cantidadMax;
             product.Laboratorio = dto.laboratorio;
             product.CodProducto = dto.codProducto;
@@ -183,7 +183,7 @@ namespace _AptekFarma.Controllers
                             {
                                 CodProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0,
                                 Nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty,
-                                PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0,
+                                PuntosNecesarios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0,
                                 CantidadMax = (int)cantidadDec,
                                 Laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty
                             });
