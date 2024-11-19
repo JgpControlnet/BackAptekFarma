@@ -18,6 +18,7 @@ using System.Text;
 using AptekFarma.Models;
 using OfficeOpenXml;
 using AptekFarma.Controllers;
+using System.Diagnostics;
 
 
 namespace _AptekFarma.Controllers
@@ -25,7 +26,7 @@ namespace _AptekFarma.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class ProdcutoVentaController : ControllerBase
+    public class ProductoVentaController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Roles> _roleManager;
@@ -33,7 +34,7 @@ namespace _AptekFarma.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-        public ProdcutoVentaController(
+        public ProductoVentaController(
             UserManager<User> userManager,
             RoleManager<Roles> roleManager,
             IHttpContextAccessor httpContextAccessor,
@@ -59,14 +60,14 @@ namespace _AptekFarma.Controllers
             {
 
 
-                if (!string.IsNullOrEmpty(filtro.Nombre))
+                if (!string.IsNullOrEmpty(filtro.nombre))
                 {
-                    products = products.Where(x => x.Nombre.ToLower().Contains(filtro.Nombre.ToLower())).ToList();
+                    products = products.Where(x => x.Nombre.ToLower().Contains(filtro.nombre.ToLower())).ToList();
                 }
 
-                if (filtro.PuntosNeceseraios > 0)
+                if (filtro.puntosNeceseraios > 0)
                 {
-                    products = products.Where(x => x.PuntosNeceseraios == filtro.PuntosNeceseraios).ToList();
+                    products = products.Where(x => x.PuntosNeceseraios == filtro.puntosNeceseraios).ToList();
                 }
             }
 
@@ -94,16 +95,16 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPost("AddProduct")]
-        public async Task<IActionResult> AddProduct([FromBody] ProductDTO dto)
+        public async Task<IActionResult> AddProduct([FromBody] ProductoVentaDTO dto)
         {
             var product = new ProductVenta
             {
-                Nombre = dto.Nombre,
-                CodProducto = dto.CodProducto,
-                Imagen = dto.Imagen,
-                PuntosNeceseraios = dto.PuntosNeceseraios,
-                CantidadMax = dto.CantidadMax,
-                Laboratorio = dto.Laboratorio
+                Nombre = dto.nombre,
+                CodProducto = dto.codProducto,
+                Imagen = dto.imagen,
+                PuntosNeceseraios = dto.puntosNeceseraios,
+                CantidadMax = dto.cantidadMax,
+                Laboratorio = dto.laboratorio
             };
 
             await _context.ProductVenta.AddAsync(product);
@@ -113,18 +114,22 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPut("UpdateProduct")]
-        public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductDTO dto)
+        [AllowAnonymous]
+        public async Task<IActionResult> UpdateProduct([FromBody] ProductoVentaDTO dto)
         {
-            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == productId);
+            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == dto.Id);
 
             if (product == null)
             {
                 return NotFound(new { message = "Producto no encontrado" });
             }
 
-            product.Nombre = dto.Nombre;
-            product.Imagen = dto.Imagen;
-            product.PuntosNeceseraios = dto.PuntosNeceseraios;
+            product.Nombre = dto.nombre;
+            product.Imagen = dto.imagen;
+            product.PuntosNeceseraios = dto.puntosNeceseraios;
+            product.CantidadMax = dto.cantidadMax;
+            product.Laboratorio = dto.laboratorio;
+            product.CodProducto = dto.codProducto;
 
             _context.ProductVenta.Update(product);
             await _context.SaveChangesAsync();
@@ -151,46 +156,56 @@ namespace _AptekFarma.Controllers
         [HttpPost("AddProductsExcel")]
         public async Task<IActionResult> AddProductsExcel([FromForm] FileDTO dto)
         {
-            if (dto.file?.Length == 0 || Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx")
+            if (dto.file?.Length == 0 || (Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx" && Path.GetExtension(dto.file.FileName)?.ToLower() != ".xls" && Path.GetExtension(dto.file.FileName)?.ToLower() != ".csv"))
             {
-                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
+                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx, .xls o .csv" });
             }
 
             var products = new List<ProductVenta>();
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            try {
+                using (var stream = new MemoryStream())
+                { 
+                    await dto.file.CopyToAsync(stream);
+                    stream.Position = 0;
 
-            using (var stream = new MemoryStream())
-            {
-                await dto.file.CopyToAsync(stream);
-                stream.Position = 0;
-
-                using (var package = new ExcelPackage(stream))
-                {
-                    ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-                    var rowCount = worksheet.Dimension.Rows;
-
-                    for (int row = 2; row <= rowCount; row++)
+                    using (var package = new ExcelPackage(stream))
                     {
-                        products.Add(new ProductVenta
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                        var rowCount = worksheet.Dimension.Rows;
+
+                        for (int row = 2; row <= rowCount; row++)
                         {
-                            CodProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0,
-                            Nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty,
-                            PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0,
-                            CantidadMax = int.TryParse(worksheet.Cells[row, 4]?.Text.Split(",")[0], out int cantidad) ? cantidad : 0,
-                            Laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty
-                        });
+                            string cantidadstring = worksheet.Cells[row, 4]?.Text;
+                            decimal cantidadDec = decimal.TryParse(cantidadstring, out decimal dec) ? dec : 0;
+                            products.Add(new ProductVenta
+                            {
+                                CodProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0,
+                                Nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty,
+                                PuntosNeceseraios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0,
+                                CantidadMax = (int)cantidadDec,
+                                Laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty
+                            });
+                        }
                     }
                 }
+
+                products = products.Where(x => x.CodProducto != 0).ToList();
+
+                // Guardar en la base de datos
+                _context.ProductVenta.AddRange(products);
+                await _context.SaveChangesAsync();
+
+                products = await _context.ProductVenta.ToListAsync();
+
+                return Ok(new { message = "Productos importados exitosamente.", products });
             }
-
-            // Guardar en la base de datos
-            _context.ProductVenta.AddRange(products);
-            await _context.SaveChangesAsync();
-
-            products = await _context.ProductVenta.ToListAsync();
-
-            return Ok(new { message = "Productos importados exitosamente.", products });
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Error al importar el archivo", error = ex.Message });
+            }
+         
         }
 
     }

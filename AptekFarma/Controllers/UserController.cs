@@ -112,92 +112,159 @@ namespace _AptekFarma.Controllers
                 return BadRequest(new { success = false, error = "La solicitud no fue exitosa." });
             }
 
-            // Return failed login response
             return BadRequest(new { success = false, error = "La solicitud no fue exitosa." });
         }
 
-        // POST: api/Usuarios
-        [HttpPost("ListUsuario")]
+        [HttpGet("GetAllUsuarios")]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsuarios([FromBody] UserFilterDTO filtro)
+        public async Task<ActionResult<IEnumerable<User>>> GetAllUsuarios([FromQuery] UserFilterDTO filter)
         {
-            var users = await _context.Users.Include(x => x.Pharmacy).ToListAsync();
-            List<UserDTO> result = new List<UserDTO>();
+            var usersQuery = _context.Users
+                .Include(u => u.Pharmacy)
+                .AsQueryable();
 
-            if (filtro != null)
+            if (!string.IsNullOrEmpty(filter.UserName))
             {
-                if (filtro.UserName != null)
-                {
-                    users = users.Where(u => u.UserName.ToLower().Contains(filtro.UserName.ToLower())).ToList();
-                }
-                if (filtro.Email != null)
-                {
-                    users = users.Where(u => u.Email.ToLower().Contains(filtro.Email.ToLower())).ToList();
-                }
-                if (filtro.PhoneNumber != null)
-                {
-                    users = users.Where(u => u.PhoneNumber.Contains(filtro.PhoneNumber)).ToList();
-                }
-                if (filtro.Nombre != null)
-                {
-                    users = users.Where(u => u.nombre.ToLower().Contains(filtro.Nombre.ToLower())).ToList();
-                }
-                if (filtro.Apellidos != null)
-                {
-                    users = users.Where(u => u.apellidos.ToLower().Contains(filtro.Apellidos.ToLower())).ToList();
-                }
-                if (filtro.Nif != null)
-                {
-                    users = users.Where(u => u.nif.ToLower().Contains(filtro.Nif.ToLower())).ToList();
-                }
-                if (filtro.FechaNacimiento != null)
-                {
-                    users = users.Where(u => u.fecha_nacimiento.Contains(filtro.FechaNacimiento)).ToList();
-                }
-                if (filtro.rol != null)
-                {
-                    users = users.Where(u => _userManager.GetRolesAsync(u).Result.Contains(filtro.rol)).ToList();
-                }
-                if (filtro.PharmacyId != 0)
-                {
-                    users = users.Where(u => u.Pharmacy.Id == filtro.PharmacyId).ToList();
-                }
-
-            }   
-            // Paginación
-            int totalItems = users.Count;
-            var paginatedUsers = users
-                .Skip((filtro.PageNumber - 1) * filtro.PageSize)
-                .Take(filtro.PageSize)
-                .ToList();
-
-            foreach (var item in paginatedUsers)
-            {
-                var user = new UserDTO();
-                user.UserName = item.UserName;
-                user.Email = item.Email;
-                user.Nif = item.nif;
-                user.Nombre = item.nombre;
-                user.Apellidos = item.apellidos;
-                user.PhoneNumber = item.PhoneNumber;
-                user.FechaNacimiento = item.fecha_nacimiento;
-                user.rol = _userManager.GetRolesAsync(item).Result.FirstOrDefault();
-                user.PharmacyId = item.Pharmacy.Id;
-                user.Points = item.Points;
-                result.Add(user);
+                usersQuery = usersQuery.Where(u => u.UserName.Contains(filter.UserName));
             }
 
-            var response = new
+            if (!string.IsNullOrEmpty(filter.Email))
             {
-                TotalItems = totalItems,
-                PageNumber = filtro.PageNumber,
-                PageSize = filtro.PageSize,
-                TotalPages = (int)Math.Ceiling(totalItems / (double)filtro.PageSize),
-                Items = result
-            };
+                usersQuery = usersQuery.Where(u => u.Email.Contains(filter.Email));
+            }
 
-            return Ok(response);
+            if (!string.IsNullOrEmpty(filter.PhoneNumber))
+            {
+                usersQuery = usersQuery.Where(u => u.PhoneNumber.Contains(filter.PhoneNumber));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Nombre))
+            {
+                usersQuery = usersQuery.Where(u => u.nombre.Contains(filter.Nombre));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Apellidos))
+            {
+                usersQuery = usersQuery.Where(u => u.apellidos.Contains(filter.Apellidos));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Nif))
+            {
+                usersQuery = usersQuery.Where(u => u.nif.Contains(filter.Nif));
+            }
+
+            if (!string.IsNullOrEmpty(filter.FechaNacimiento))
+            {
+                usersQuery = usersQuery.Where(u => u.fecha_nacimiento == filter.FechaNacimiento);
+            }
+
+            if (!string.IsNullOrEmpty(filter.rol))
+            {
+                var usersList = await usersQuery.ToListAsync();
+                usersList = usersList.Where(u => _userManager.GetRolesAsync(u).Result.Contains(filter.rol)).ToList();
+                return Ok(usersList.Select(u => MapToDTO(u)));
+            }
+
+            if (filter.PharmacyId != 0)
+            {
+                usersQuery = usersQuery.Where(u => u.Pharmacy != null && u.Pharmacy.Id == filter.PharmacyId);
+            }
+
+            var usersListFiltered = await usersQuery.ToListAsync();
+            var usersDTO = usersListFiltered.Select(u => MapToDTO(u)).ToList();
+
+            return Ok(usersDTO);
         }
+
+        [HttpGet("GetAllFarmaceuticos")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllFarmaceuticos([FromQuery] UserFilterDTO filter)
+        {
+            var users = _context.Users
+                .Include(u => u.Pharmacy) 
+                .AsQueryable();
+
+            users = users.Where(u => u.PharmacyID != null);
+
+            if (!string.IsNullOrEmpty(filter.UserName))
+            {
+                users = users.Where(u => u.UserName.Contains(filter.UserName));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Email))
+            {
+                users = users.Where(u => u.Email.Contains(filter.Email));
+            }
+
+            if (!string.IsNullOrEmpty(filter.PhoneNumber))
+            {
+                users = users.Where(u => u.PhoneNumber.Contains(filter.PhoneNumber));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Nombre))
+            {
+                users = users.Where(u => u.nombre.Contains(filter.Nombre));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Apellidos))
+            {
+                users = users.Where(u => u.apellidos.Contains(filter.Apellidos));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Nif))
+            {
+                users = users.Where(u => u.nif.Contains(filter.Nif));
+            }
+
+            if (!string.IsNullOrEmpty(filter.FechaNacimiento))
+            {
+                users = users.Where(u => u.fecha_nacimiento.Contains(filter.FechaNacimiento));
+            }
+
+            if (!string.IsNullOrEmpty(filter.rol))
+            {
+                users = users.Where(u => _userManager.GetRolesAsync(u).Result.Contains(filter.rol));
+            }
+
+            if (filter.PharmacyId != 0)
+            {
+                users = users.Where(u => u.PharmacyID == filter.PharmacyId);
+            }
+
+            var usersList = await users.ToListAsync();
+            var usersDTO = usersList.Select(u => MapToDTO(u)).ToList();
+            return Ok(usersDTO);
+        }
+
+
+        private UserDTO MapToDTO(User user)
+        {
+            return new UserDTO
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Nombre = user.nombre,
+                Apellidos = user.apellidos,
+                Nif = user.nif,
+                FechaNacimiento = user.fecha_nacimiento,
+                rol = _userManager.GetRolesAsync(user).Result.FirstOrDefault(), 
+                PharmacyId = user.Pharmacy != null ? user.Pharmacy.Id : null,
+                Points = user.Points,
+                Pharmacy = user.Pharmacy != null ? new PharmacyDTO
+                {
+                    id = user.Pharmacy.Id,
+                    Nombre = user.Pharmacy.Nombre,
+                    Direccion = user.Pharmacy.Direccion,
+                    CP = user.Pharmacy.CP,
+                    Localidad = user.Pharmacy.Localidad,
+                    Provincia = user.Pharmacy.Provincia
+                } : null
+                
+            };
+        }
+
 
         // GET: api/Usuarios/string
         [HttpGet("Usuario")]
@@ -223,6 +290,9 @@ namespace _AptekFarma.Controllers
 
             return Ok(user);
         }
+
+       
+       
 
         // PUT: api/Usuarios/5
         [HttpPut("ModificarUsuario")]
@@ -340,6 +410,12 @@ namespace _AptekFarma.Controllers
             if (dto == null)
             {
                 return "No puede enviar el formulario vacio";
+            }
+
+            var user = _context.Users.FirstOrDefault(u => u.UserName == dto.UserName);
+            if (user != null)
+            {
+                return "El nombre de usuario ya existe";
             }
 
             string patternEmail = @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$";

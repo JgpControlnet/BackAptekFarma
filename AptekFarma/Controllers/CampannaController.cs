@@ -58,13 +58,19 @@ namespace _AptekFarma.Controllers
         public async Task<IActionResult> GetCampannaById(int id)
         {
             var campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == id);
-
+            var productos = new List<ProductoCampanna>();
+            if (campanna != null)
+            {
+                 productos = await _context.ProductoCampanna.Where(x => x.CampannaId == campanna.Id).ToListAsync();
+            }
+          
             if (campanna == null)
             {
                 return NotFound(new { message = "No se ha encontrado Campaña" });
             }
 
-            return Ok(campanna);
+            return Ok(new { campanna, productos });
+
         }
 
         [HttpPost("CreateCampanna")]

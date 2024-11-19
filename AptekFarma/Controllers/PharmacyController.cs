@@ -115,12 +115,10 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPut("UpdatePharmacy")]
-        public async Task<IActionResult> UpdatePharmacy(int pharmacyId, [FromBody] PharmacyDTO pharmacyDTO)
+        public async Task<IActionResult> UpdatePharmacy([FromBody] PharmacyDTO pharmacyDTO)
         {
             var pharmacy = await _context.Pharmacy
-                .Include(x => x.Localidad)
-                .Include(x => x.Provincia)
-                .FirstOrDefaultAsync(x => x.Id == pharmacyId);
+                .FirstOrDefaultAsync(x => x.Id == pharmacyDTO.id);
 
           
             if (pharmacy == null)
@@ -160,9 +158,9 @@ namespace _AptekFarma.Controllers
         [HttpPost("ImportPharmaciesExcel")]
         public async Task<IActionResult> ImportPharmacies([FromForm] FileDTO dto)
         {
-            if (dto.file?.Length == 0 || Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx")
+            if (dto.file?.Length == 0 || (Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx" && Path.GetExtension(dto.file.FileName)?.ToLower() != ".xls" && Path.GetExtension(dto.file.FileName)?.ToLower() != ".csv"))
             {
-                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx" });
+                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx, .xls o .csv" });
             }
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -170,96 +168,61 @@ namespace _AptekFarma.Controllers
             List<Pharmacy> pharmacies = new List<Pharmacy>();
             List<PharmacyErrorDTO> errors = new List<PharmacyErrorDTO>();
 
-            using (var stream = new MemoryStream())
-            {
-                await dto.file.CopyToAsync(stream);
-
-                using (var package = new ExcelPackage(stream))
+            try {
+                using (var stream = new MemoryStream())
                 {
-                    ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-                    int rowCount = worksheet.Dimension.Rows;
-                   
+                    await dto.file.CopyToAsync(stream);
 
-                    for (int row = 2; row <= rowCount; row++)
+                    using (var package = new ExcelPackage(stream))
                     {
-                        Localidad localidad = null;
-                        bool localidadIncorrecta = false;
-                        bool provinciaIncorrecta = false;
-                        localidadIncorrecta = true;
-                        Provincia provincia = null;
-                        provinciaIncorrecta = true;
-                            
-                        
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                        int rowCount = worksheet.Dimension.Rows;
 
-                        // Si no existe la población o la provincia, no se importa la farmacia
-                        if (localidadIncorrecta || provinciaIncorrecta)
+                        for (int row = 2; row <= rowCount; row++)
                         {
-                            List<string> errores = new List<string>();
-                            if (localidadIncorrecta)
-                            {
-                                errores.Add("No existe la localidad");
-                            }
-                            if (provinciaIncorrecta)
-                            {
-                                errores.Add("No existe la provincia");
-                            }
-                            // Se guarda el error
-                            errors.Add(new PharmacyErrorDTO
-                            {
-                                Nombre = worksheet.Cells[row, 1].Value?.ToString() ?? string.Empty,
-                                Direccion = worksheet.Cells[row, 2].Value?.ToString() ?? string.Empty,
-                                CP = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty,
-                                Localidad = worksheet.Cells[row, 3].Value?.ToString() ?? string.Empty,
-                                Provincia = worksheet.Cells[row, 4].Value?.ToString() ?? string.Empty,
-                                Linea = row,
-                                Errores = errores
-                            });
 
-                            continue;
+                            var pharmacy = new Pharmacy
+                            {
+                                Nombre = worksheet.Cells[row, 1]?.Value?.ToString()?.Trim() ?? string.Empty,
+                                Direccion = worksheet.Cells[row, 2]?.Value?.ToString()?.Trim() ?? string.Empty,
+                                CP = worksheet.Cells[row, 5]?.Value?.ToString()?.Trim() ?? string.Empty,
+                                Localidad = worksheet.Cells[row, 3]?.Value?.ToString()?.Trim() ?? string.Empty,
+                                Provincia = worksheet.Cells[row, 4]?.Value?.ToString()?.Trim() ?? string.Empty,
+
+                            };
+
+                            //await _context.Pharmacies.AddAsync(pharmacy);
+
+                            pharmacies.Add(pharmacy);
                         }
 
-                        var pharmacy = new Pharmacy
-                        {
-                            Nombre = worksheet.Cells[row, 1].Value?.ToString() ?? string.Empty,
-                            Direccion = worksheet.Cells[row, 2].Value?.ToString() ?? string.Empty,
-                            CP = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty,
-                            Localidad = worksheet.Cells[row, 3].Value?.ToString() ?? string.Empty,
-                            Provincia = worksheet.Cells[row, 4].Value?.ToString() ?? string.Empty,
-                        };
-
-                        //await _context.Pharmacies.AddAsync(pharmacy);
-
-                        pharmacies.Add(pharmacy);
+                        //await _context.SaveChangesAsync();
                     }
-
-                    //await _context.SaveChangesAsync();
                 }
-            }
 
-            //si existe algun error no importa ninguna farmacia
-            if (errors.Count > 0)
+                if (errors.Count > 0)
+                {
+                    return BadRequest(new { message = "Se han encontrado errores", errors });
+                }
+
+                await _context.Pharmacy.AddRangeAsync(pharmacies);
+
+                await _context.SaveChangesAsync();
+
+                //importar solo las que su nombre no se vacio o nulo
+                pharmacies = pharmacies.Where(x => x.Nombre != null || string.IsNullOrEmpty(x.Nombre)).ToList();
+               
+
+                pharmacies = await _context.Pharmacy.ToListAsync();
+
+                return Ok(new { message = "Importado Correctamente", pharmacies });
+            }
+            catch (Exception ex)
             {
-                return BadRequest(new { message = "Se han encontrado errores", errors });
+                return BadRequest(new { message = "Error al importar el archivo", error = ex.Message });
             }
 
-            await _context.Pharmacy.AddRangeAsync(pharmacies);
-
-            await _context.SaveChangesAsync();
-
-            pharmacies = await _context.Pharmacy.ToListAsync();
-
-            return Ok(new { message = "Importado Correctamente", pharmacies });
-        }
-
-        string NormalizeString(string input)
-        {
-            if (input == null) return null;
-
-            return string.Concat(input
-                .Trim() 
-                .ToLowerInvariant() // Convierte a minúsculas 
-                .Normalize(NormalizationForm.FormD) // Normaliza la cadena para dividir caracteres con tildes en base + tilde, á en a + ´
-                .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)); // Remueve los caracteres de marca de tildes
+            
         }
     }
 }
