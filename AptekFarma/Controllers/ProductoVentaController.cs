@@ -1,6 +1,6 @@
-﻿using _AptekFarma.Models;
-using _AptekFarma.DTO;
-using _AptekFarma.Context;
+﻿using AptekFarma.Models;
+using AptekFarma.DTO;
+using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -21,7 +21,7 @@ using AptekFarma.Controllers;
 using System.Diagnostics;
 
 
-namespace _AptekFarma.Controllers
+namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -95,9 +95,9 @@ namespace _AptekFarma.Controllers
         }
 
         [HttpPost("AddProduct")]
-        public async Task<IActionResult> AddProduct([FromBody] ProductoVentaDTO dto)
+        public async Task<IActionResult> AddProduct([FromBody] DTO.ProductoVentaDTO dto)
         {
-            var product = new ProductVenta
+            var product = new AptekFarma.Models.ProductoVenta
             {
                 Nombre = dto.nombre,
                 CodProducto = dto.codProducto,
@@ -115,7 +115,7 @@ namespace _AptekFarma.Controllers
 
         [HttpPut("UpdateProduct")]
         [AllowAnonymous]
-        public async Task<IActionResult> UpdateProduct([FromBody] ProductoVentaDTO dto)
+        public async Task<IActionResult> UpdateProduct([FromBody] DTO.ProductoVentaDTO dto)
         {
             var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == dto.Id);
 
@@ -161,7 +161,7 @@ namespace _AptekFarma.Controllers
                 return BadRequest(new { message = "Debe proporcionar un archivo .xlsx, .xls o .csv" });
             }
 
-            var products = new List<ProductVenta>();
+            var products = new List<AptekFarma.Models.ProductoVenta>();
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             try {
@@ -179,7 +179,7 @@ namespace _AptekFarma.Controllers
                         {
                             string cantidadstring = worksheet.Cells[row, 4]?.Text;
                             decimal cantidadDec = decimal.TryParse(cantidadstring, out decimal dec) ? dec : 0;
-                            products.Add(new ProductVenta
+                            products.Add(new AptekFarma.Models.ProductoVenta
                             {
                                 CodProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0,
                                 Nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty,

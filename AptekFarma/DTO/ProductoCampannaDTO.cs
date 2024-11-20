@@ -1,6 +1,6 @@
 ﻿using AptekFarma.Models;
 
-namespace _AptekFarma.DTO
+namespace AptekFarma.DTO
 {
     public class ProductoCampannaDTO
     {

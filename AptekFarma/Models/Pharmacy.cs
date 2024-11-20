@@ -1,4 +1,4 @@
-﻿using _AptekFarma.Models;
+﻿using AptekFarma.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

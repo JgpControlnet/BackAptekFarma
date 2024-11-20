@@ -1,5 +1,5 @@
-using _AptekFarma.Context;
-using _AptekFarma.Models;
+using AptekFarma.Context;
+using AptekFarma.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;

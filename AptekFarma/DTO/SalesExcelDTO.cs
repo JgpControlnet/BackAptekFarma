@@ -1,4 +1,4 @@
-﻿using _AptekFarma.DTO;
+﻿using AptekFarma.DTO;
 
 namespace AptekFarma.DTO
 {

@@ -1,6 +1,6 @@
-﻿using _AptekFarma.Models;
-using _AptekFarma.DTO;
-using _AptekFarma.Context;
+﻿using AptekFarma.Models;
+using AptekFarma.DTO;
+using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -22,7 +22,7 @@ using AptekFarma.DTO;
 using System.Globalization;
 
 
-namespace _AptekFarma.Controllers
+namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -51,13 +51,13 @@ namespace _AptekFarma.Controllers
         [HttpPost("GetAllCampannas")]
         public async Task<IActionResult> GetAllCampannas()
         {
-           return Ok(await _context.Campanna.ToListAsync());
+           return Ok(await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync());
         }
 
         [HttpGet("GetCampannaById")]
         public async Task<IActionResult> GetCampannaById(int id)
         {
-            var campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == id);
+            var campanna = await _context.Campanna.Include(c=> c.EstadoCampanna).FirstOrDefaultAsync(x => x.Id == id);
             var productos = new List<ProductoCampanna>();
             if (campanna != null)
             {
@@ -83,12 +83,13 @@ namespace _AptekFarma.Controllers
                 Titulo = campannaDTO.titulo,
                 Descripcion = campannaDTO.descripcion,
                 FechaInicio = campannaDTO.fechaInicio,
-                FechaFin = campannaDTO.fechaFin
+                FechaFin = campannaDTO.fechaFin,
+                EstadoCampannaId = 1 // Estado activo
             };
 
             await _context.Campanna.AddAsync(campanna);
             await _context.SaveChangesAsync();
-            var campannas = await _context.Campanna.ToListAsync();
+            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync();
 
             return Ok(new { message = "Campaña creada correctamente", campannas });
         }
@@ -110,10 +111,12 @@ namespace _AptekFarma.Controllers
             campanna.Descripcion = campannaDTO.descripcion;
             campanna.FechaInicio = campannaDTO.fechaInicio;
             campanna.FechaFin = campannaDTO.fechaFin;
+            campanna.EstadoCampannaId = campannaDTO.estadoCampanna.Id;
+
 
             _context.Campanna.Update(campanna);
             await _context.SaveChangesAsync();
-            var campannas = await _context.Campanna.ToListAsync();
+            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync();
 
             return Ok(new { message = "Campaña editada correctamente", campannas });
         }
@@ -130,7 +133,7 @@ namespace _AptekFarma.Controllers
 
             _context.Campanna.Remove(campanna);
             await _context.SaveChangesAsync();
-            var campannas = await _context.Campanna.ToListAsync();
+            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync();
             return Ok(new { message = "Eliminada Correctamente", campannas });
         }
     }

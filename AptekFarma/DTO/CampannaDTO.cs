@@ -1,4 +1,6 @@
-﻿namespace _AptekFarma.DTO
+﻿using AptekFarma.Models;
+
+namespace AptekFarma.DTO
 {
     public class CampannaDTO
     {
@@ -8,5 +10,7 @@
         public string? descripcion { get; set; }
         public DateTime fechaInicio { get; set; }
         public DateTime fechaFin { get; set; }
+        public EstadoCampanna? estadoCampanna { get; set; }
+
     }
 }

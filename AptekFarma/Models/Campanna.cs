@@ -15,5 +15,9 @@ namespace AptekFarma.Models
         public DateTime FechaInicio { get; set; }
         public DateTime FechaFin { get; set; }
 
+        public int  EstadoCampannaId { get; set; }
+        [ForeignKey("EstadoCampannaId")]
+        public EstadoCampanna EstadoCampanna { get; set; }
+
     }
 }

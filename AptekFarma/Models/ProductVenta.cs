@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace AptekFarma.Models
 {
     [Table("producto_venta")]
-    public class ProductVenta
+    public class ProductoVenta
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

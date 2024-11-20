@@ -1,9 +1,9 @@
-﻿using _AptekFarma.Models;
+﻿using AptekFarma.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using AptekFarma.Models;
 
-namespace _AptekFarma.Context
+namespace AptekFarma.Context
 {
     public class AppDbContext: IdentityDbContext<User, Roles, string>
     {
@@ -12,21 +12,15 @@ namespace _AptekFarma.Context
             
         }
 
-        
         public DbSet<Pharmacy> Pharmacy { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Campanna> Campanna { get; set; }
-        public DbSet<FormularioVenta> FormularioVenta { get; set; }
+        public DbSet<FormularioVentaCampanna> FormularioVenta { get; set; }
+        public DbSet<VentaCampanna> VentaCampanna { get; set; }
         public DbSet<ProductoCampanna> ProductoCampanna { get; set; }
-        public DbSet<ProductVenta> ProductVenta { get; set; }
+        public DbSet<ProductoVenta> ProductVenta { get; set; }
         public DbSet<VentaPuntos> VentaPuntos { get; set; }
-
-
-
-
-
-        // public DbSet<Localidad> Localidades { get; set; }
-        // public DbSet<Provincia> Provincias { get; set; }    
-
+        public DbSet<EstadoCampanna> EstadoCampanna { get; set; }
+        public DbSet<EstadoFormulario> EstadoFormulario { get; set; }
     }
 }

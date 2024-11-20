@@ -1,6 +1,6 @@
-﻿using _AptekFarma.Models;
-using _AptekFarma.DTO;
-using _AptekFarma.Context;
+﻿using AptekFarma.Models;
+using AptekFarma.DTO;
+using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +20,7 @@ using Humanizer;
 using AptekFarma.Models;
 
 
-namespace _AptekFarma.Controllers
+namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -178,58 +178,13 @@ namespace _AptekFarma.Controllers
 
         [HttpGet("GetAllFarmaceuticos")]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllFarmaceuticos([FromQuery] UserFilterDTO filter)
+        public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllFarmaceuticos()
         {
             var users = _context.Users
                 .Include(u => u.Pharmacy) 
                 .AsQueryable();
 
             users = users.Where(u => u.PharmacyID != null);
-
-            if (!string.IsNullOrEmpty(filter.UserName))
-            {
-                users = users.Where(u => u.UserName.Contains(filter.UserName));
-            }
-
-            if (!string.IsNullOrEmpty(filter.Email))
-            {
-                users = users.Where(u => u.Email.Contains(filter.Email));
-            }
-
-            if (!string.IsNullOrEmpty(filter.PhoneNumber))
-            {
-                users = users.Where(u => u.PhoneNumber.Contains(filter.PhoneNumber));
-            }
-
-            if (!string.IsNullOrEmpty(filter.Nombre))
-            {
-                users = users.Where(u => u.nombre.Contains(filter.Nombre));
-            }
-
-            if (!string.IsNullOrEmpty(filter.Apellidos))
-            {
-                users = users.Where(u => u.apellidos.Contains(filter.Apellidos));
-            }
-
-            if (!string.IsNullOrEmpty(filter.Nif))
-            {
-                users = users.Where(u => u.nif.Contains(filter.Nif));
-            }
-
-            if (!string.IsNullOrEmpty(filter.FechaNacimiento))
-            {
-                users = users.Where(u => u.fecha_nacimiento.Contains(filter.FechaNacimiento));
-            }
-
-            if (!string.IsNullOrEmpty(filter.rol))
-            {
-                users = users.Where(u => _userManager.GetRolesAsync(u).Result.Contains(filter.rol));
-            }
-
-            if (filter.PharmacyId != 0)
-            {
-                users = users.Where(u => u.PharmacyID == filter.PharmacyId);
-            }
 
             var usersList = await users.ToListAsync();
             var usersDTO = usersList.Select(u => MapToDTO(u)).ToList();

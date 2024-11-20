@@ -1,7 +1,7 @@
 ﻿using AptekFarma.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace _AptekFarma.DTO
+namespace AptekFarma.DTO
 {
     public class UserDTO
     {
@@ -15,7 +15,7 @@ namespace _AptekFarma.DTO
         public string FechaNacimiento { get; set; }
         public string rol { get; set; }
         public int? PharmacyId { get; set; }
-        public decimal Points { get; set; }
+        public double Points { get; set; }
         public PharmacyDTO Pharmacy { get; set; }
 
     }

@@ -1,7 +1,7 @@
 ﻿using AptekFarma.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace _AptekFarma.DTO
+namespace AptekFarma.DTO
 {
     public class UserFilterDTO
     {

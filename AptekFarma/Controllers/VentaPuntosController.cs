@@ -1,31 +1,19 @@
-﻿using _AptekFarma.Models;
-using _AptekFarma.DTO;
-using _AptekFarma.Context;
+﻿using AptekFarma.Models;
+using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
-using System.Configuration;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using AptekFarma.Models;
-using OfficeOpenXml;
-using AptekFarma.Controllers;
 using AptekFarma.DTO;
 
 
-namespace _AptekFarma.Controllers
+namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class VentaPuntosController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
@@ -192,8 +180,5 @@ namespace _AptekFarma.Controllers
             
             return Ok(new { message = "Compra realizada correctamente" });
         }
-
-
-
     }
 }
