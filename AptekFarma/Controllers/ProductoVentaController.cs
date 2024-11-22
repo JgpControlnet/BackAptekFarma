@@ -90,7 +90,6 @@ namespace AptekFarma.Controllers
             {
                 return NotFound(new { message = "No se ha encontrado Producto" });
             }
-
             return Ok(product);
         }
 
@@ -102,6 +101,7 @@ namespace AptekFarma.Controllers
                 Nombre = dto.nombre,
                 CodProducto = dto.codProducto,
                 Imagen = dto.imagen,
+                Descripcion = dto.descripcion,
                 PuntosNecesarios = dto.puntosNecesarios,
                 CantidadMax = dto.cantidadMax,
                 Laboratorio = dto.laboratorio
@@ -126,6 +126,7 @@ namespace AptekFarma.Controllers
 
             product.Nombre = dto.nombre;
             product.Imagen = dto.imagen;
+            product.Descripcion = dto.descripcion;
             product.PuntosNecesarios = dto.puntosNecesarios;
             product.CantidadMax = dto.cantidadMax;
             product.Laboratorio = dto.laboratorio;
@@ -205,8 +206,6 @@ namespace AptekFarma.Controllers
             {
                 return BadRequest(new { message = "Error al importar el archivo", error = ex.Message });
             }
-         
         }
-
     }
 }

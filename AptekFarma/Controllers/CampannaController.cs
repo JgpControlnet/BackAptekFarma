@@ -3,23 +3,9 @@ using AptekFarma.DTO;
 using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
-using System.Configuration;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using AptekFarma.Models;
-using OfficeOpenXml;
-using AptekFarma.Controllers;
-using AptekFarma.DTO;
-using System.Globalization;
 
 
 namespace AptekFarma.Controllers
@@ -29,23 +15,12 @@ namespace AptekFarma.Controllers
     [Authorize]
     public class CampannaController : ControllerBase
     {
-        private readonly UserManager<User> _userManager;
-        private readonly RoleManager<Roles> _roleManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AppDbContext _context;
-        private readonly IConfiguration _configuration;
 
         public CampannaController(
-            UserManager<User> userManager,
-            RoleManager<Roles> roleManager,
-            IHttpContextAccessor httpContextAccessor,
-            AppDbContext context,
-            IConfiguration configuration)
+            AppDbContext context)
         {
-            _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
             _context = context;
-            _configuration = configuration;
         }
 
         [HttpPost("GetAllCampannas")]
@@ -82,9 +57,11 @@ namespace AptekFarma.Controllers
                 Nombre = campannaDTO.nombre,
                 Titulo = campannaDTO.titulo,
                 Descripcion = campannaDTO.descripcion,
+                Importante = campannaDTO.importante,
                 FechaInicio = campannaDTO.fechaInicio,
                 FechaFin = campannaDTO.fechaFin,
-                EstadoCampannaId = 1 // Estado activo
+                FechaValido = campannaDTO.fechaValido,
+                EstadoCampannaId = 1
             };
 
             await _context.Campanna.AddAsync(campanna);
@@ -108,9 +85,11 @@ namespace AptekFarma.Controllers
 
             campanna.Nombre = campannaDTO.nombre;
             campanna.Titulo = campannaDTO.titulo;
+            campanna.Importante = campannaDTO.importante;
             campanna.Descripcion = campannaDTO.descripcion;
             campanna.FechaInicio = campannaDTO.fechaInicio;
             campanna.FechaFin = campannaDTO.fechaFin;
+            campanna.FechaValido = campannaDTO.fechaValido;
             campanna.EstadoCampannaId = campannaDTO.estadoCampanna.Id;
 
 
@@ -136,5 +115,56 @@ namespace AptekFarma.Controllers
             var campannas = await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync();
             return Ok(new { message = "Eliminada Correctamente", campannas });
         }
+        [HttpGet("GetCampannaInformes")]
+        public async Task<IActionResult> GetCampanna()
+        {
+            var campannas = await _context.Campanna
+                .Include(c => c.EstadoCampanna)
+                .ToListAsync();
+
+            if (campannas == null || !campannas.Any())
+            {
+                return NotFound("No se encontraron campañas.");
+            }
+
+            var campannaDTOs = new List<CampannaDTO>();
+
+            foreach (var campanna in campannas)
+            {
+                var formularios = await _context.FormularioVenta
+                    .Where(f => f.CampannaID == campanna.Id)
+                    .ToListAsync();
+
+                var formulariosNoValidados = formularios
+                    .Where(f => f.EstadoFormularioID == 1) 
+                    .ToList();
+
+                var formulariosValidados = formularios
+                    .Where(f => f.EstadoFormularioID == 2)
+                    .ToList();
+
+                var campannaDTO = new CampannaDTO
+                {
+                    id = campanna.Id,
+                    nombre = campanna.Nombre,
+                    titulo = campanna.Titulo,
+                    importante = campanna.Importante,
+                    descripcion = campanna.Descripcion,
+                    fechaInicio = campanna.FechaInicio,
+                    fechaFin = campanna.FechaFin,
+                    fechaValido = campanna.FechaValido,
+                    estadoCampanna = campanna.EstadoCampanna
+                };
+
+                 campannaDTO.informesPendientes = formulariosNoValidados.Count;
+                 campannaDTO.informesConfirmados = formulariosValidados.Count;
+                 campannaDTO.puntosObtenidos = formulariosValidados.Sum(f => f.TotalPuntos);
+                campannaDTOs.Add(campannaDTO);
+            }
+
+            return Ok(campannaDTOs);
+        }
+
+
     }
 }

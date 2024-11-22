@@ -13,25 +13,20 @@ namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class FormularioVentaCampannaController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AppDbContext _context;
-        private readonly IConfiguration _configuration;
 
         public FormularioVentaCampannaController(
             UserManager<User> userManager,
-            IHttpContextAccessor httpContextAccessor,
-            AppDbContext context,
-            IConfiguration configuration)
+            AppDbContext context)
         {
             _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
             _context = context;
-            _configuration = configuration;
         }
+
         [HttpGet("GetAllformularios")]
         public IActionResult GetAllformularios(
             [FromQuery] int? campannaID,
@@ -40,6 +35,7 @@ namespace AptekFarma.Controllers
         {
             var query = _context.FormularioVenta
                 .Include(f => f.User)
+                .ThenInclude(u => u.Pharmacy)
                 .Include(f => f.Campanna)
                 .Include(f => f.EstadoFormulario)
                 .AsQueryable();
@@ -59,8 +55,8 @@ namespace AptekFarma.Controllers
                 query = query.Where(f => f.EstadoFormularioID == EstadoFormularioID.Value);
             }
 
-            // Ejecutar la consulta y mapear a DTO
             var formularios = query.ToList();
+
             var formulariosDTO = formularios.Select(f => new FormularioVentaDTO
             {
                 id = f.Id,
@@ -79,14 +75,13 @@ namespace AptekFarma.Controllers
                     .Include(vc => vc.ProductoCampanna)
                     .Where(vc => vc.FormularioID == f.Id)
                     .ToList(),
-                totalPuntos = f.TotalPuntos
+                totalPuntos = f.TotalPuntos,
+                farmacia = f.User.Pharmacy
             });
 
             return Ok(formulariosDTO);
         }
 
-
-        //get formulario by id
         [HttpGet("GetFormulario")]
         public async Task<IActionResult> GetFormulario([FromQuery] int formularioID)
         {
@@ -123,6 +118,10 @@ namespace AptekFarma.Controllers
                 ventaCampannas = ventaCampannas,
                 totalPuntos = formulario.TotalPuntos
             };
+
+
+            //crea 3 colecciones que haga un ranking de los productos mas vendidos, los productos mas canjeados y los productos con mas puntos
+
 
             return Ok(formularioDTO);
         }
@@ -175,14 +174,12 @@ namespace AptekFarma.Controllers
                 UserID = request.UserID,
                 CampannaID = request.CampannaID,
                 TotalPuntos = totalPuntos,
-                EstadoFormularioID = 2 
+                EstadoFormularioID = 1
             };
 
-            // Guarda el formulario
             _context.FormularioVenta.Add(formularioVenta);
             await _context.SaveChangesAsync();
 
-            // Asocia las ventas al formulario
             foreach (var venta in ventas)
             {
                 venta.FormularioID = formularioVenta.Id;
@@ -194,7 +191,6 @@ namespace AptekFarma.Controllers
             return Ok(new { Message = "Formulario de venta creado con éxito", FormularioID = formularioVenta.Id });
         }
 
-
         [HttpPost("ValidarFormulario")]
         public async Task<IActionResult> ValidarFormulario([FromBody] RequestValidar requestValidar)
         {
@@ -203,11 +199,6 @@ namespace AptekFarma.Controllers
                 .Include(f => f.Campanna)
                 .Include(f => f.EstadoFormulario)
                 .FirstOrDefaultAsync(f => f.Id == requestValidar.formularioID);
-
-            var ventaCampannas = _context.VentaCampanna
-                   .Include(vc => vc.ProductoCampanna)
-                   .Where(vc => vc.FormularioID == requestValidar.formularioID)
-                   .ToList();
 
             if (formulario == null)
             {
@@ -221,33 +212,59 @@ namespace AptekFarma.Controllers
 
             double totalPuntosFormulario = 0;
 
-            foreach (var venta in ventaCampannas)
+            foreach (var venta in requestValidar.ventaCampannas)
             {
-                var producto = venta.ProductoCampanna;
+                var producto = await _context.ProductoCampanna.FindAsync(venta.ProductoCampanna.Id);
+                if (producto == null)
+                {
+                    return NotFound($"Producto con ID {venta.ProductoCampanna.Id} no encontrado.");
+                }
+
                 int cantidadCanjeada = Math.Min(venta.Cantidad, producto.UnidadesMaximas);
+                if (cantidadCanjeada == 0)
+                {
+                    continue;
+                }
+
                 totalPuntosFormulario += cantidadCanjeada * producto.Puntos;
+
+           
+                producto.UnidadesMaximas -= cantidadCanjeada;
+                _context.Entry(producto).State = EntityState.Modified;
+
+                venta.Cantidad = cantidadCanjeada;
+                venta.TotalPuntos = cantidadCanjeada * producto.Puntos;
+                await UpdateVentaCampanna(venta);
             }
 
             formulario.User.Points += totalPuntosFormulario;
-
             formulario.EstadoFormularioID = 2;
+            formulario.TotalPuntos = totalPuntosFormulario;
 
             _context.Update(formulario);
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Formulario de venta creado con éxito"});
-
+            return Ok(new { Message = "Formulario de venta validado con éxito.", TotalPuntos = totalPuntosFormulario, formulario = formulario });
         }
 
 
+        [HttpPost("UpdateVentaCampanna")]
+        public async Task<IActionResult> UpdateVentaCampanna([FromBody] VentaCampanna ventaDTO)
+        {
+            var ventaCampanna = await _context.VentaCampanna.FindAsync(ventaDTO.Id);
 
+            if (ventaCampanna == null)
+            {
+                return NotFound("Venta en Campanna no encontrada.");
+            }
 
+            ventaCampanna.TotalPuntos = (int)ventaDTO.TotalPuntos;
 
+            _context.Update(ventaCampanna);
+            await _context.SaveChangesAsync();
 
-
-
-
-
+            return Ok(new { Message = "Venta en Campanna actualizada con éxito" });
+        }
     }
 
     public class FormularioVentaRequest
@@ -266,6 +283,7 @@ namespace AptekFarma.Controllers
     public class RequestValidar
     {
         public int formularioID { get; set; }
-       
+        public List<VentaCampanna> ventaCampannas { get; set; }
+
     }
 }

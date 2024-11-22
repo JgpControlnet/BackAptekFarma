@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AptekFarma.Models;
 using AptekFarma.DTO;
 
 
@@ -17,20 +16,14 @@ namespace AptekFarma.Controllers
     public class VentaPuntosController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AppDbContext _context;
-        private readonly IConfiguration _configuration;
 
         public VentaPuntosController(
             UserManager<User> userManager,
-            IHttpContextAccessor httpContextAccessor,
-            AppDbContext context,
-            IConfiguration configuration)
+            AppDbContext context)
         {
             _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
             _context = context;
-            _configuration = configuration;
         }
 
         [HttpPost("GetAllVentas")]
@@ -150,35 +143,82 @@ namespace AptekFarma.Controllers
         public async Task<IActionResult> ComprarProducto([FromBody] CompraPuntosDTO dto)
         {
             var product = _context.ProductVenta.FirstOrDefault(x => x.Id == dto.idProducto);
-
-            if(product == null)
+            if (product == null)
                 return NotFound(new { message = "Producto no encontrado" });
 
             if (product.CantidadMax < dto.cantidad)
-                return BadRequest(new { message = "No hay suficiente stock" });
+                return BadRequest(new { message = "No hay suficiente stock disponible para la compra" });
 
             var user = await _userManager.FindByIdAsync(dto.idUsuario.ToString());
-            
             if (user == null)
                 return NotFound(new { message = "Usuario no encontrado" });
+
+            var puntosTotalesCompra = product.PuntosNecesarios * dto.cantidad;
+
+            if (user.Points < (double)puntosTotalesCompra)
+                return BadRequest(new { message = "El usuario no tiene suficientes puntos para realizar esta compra" });
 
             var venta = new VentaPuntos
             {
                 UserID = user.Id,
                 ProductID = product.Id,
                 Cantidad = dto.cantidad,
-                PuntosTotales = product.PuntosNecesarios * dto.cantidad,
+                PuntosTotales = puntosTotalesCompra,
                 FechaCompra = DateTime.Now
             };
+
+            user.Points -= (double)puntosTotalesCompra;
 
             product.CantidadMax -= dto.cantidad;
 
             _context.ProductVenta.Update(product);
-            await _context.VentaPuntos.AddAsync(venta);
-            
+            _context.VentaPuntos.Add(venta);
+            _context.Users.Update(user);
             await _context.SaveChangesAsync();
-            
-            return Ok(new { message = "Compra realizada correctamente" });
+
+            return Ok(new
+            {
+                message = "Compra realizada correctamente",
+                puntosRestantes = user.Points,
+                cantidadRestante = product.CantidadMax
+            });
         }
+
+        [HttpGet("GetVentasPorUsuario")]
+        public async Task<IActionResult> GetVentasPorUsuario([FromQuery] string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("El ID del usuario es requerido.");
+            }
+
+            var ventas = await _context.VentaPuntos
+                .Include(v => v.User) 
+                .Include(v => v.Product) 
+                .Where(v => v.UserID == userId) 
+                .OrderByDescending(v => v.FechaCompra)
+                .ToListAsync();
+
+            if (ventas == null || !ventas.Any())
+            {
+                return NotFound("No se encontraron ventas para el usuario proporcionado.");
+            }
+
+            var ventasDTO = ventas.Select(v => new
+            {
+                v.Id,
+                v.UserID,
+                Usuario = v.User?.UserName,
+                v.ProductID,
+                Producto = v.Product?.Nombre,
+                v.Cantidad,
+                v.PuntosTotales,
+                v.FechaCompra
+            });
+
+            return Ok(ventasDTO);
+        }
+
+
     }
 }
