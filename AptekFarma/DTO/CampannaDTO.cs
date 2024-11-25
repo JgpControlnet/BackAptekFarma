@@ -9,6 +9,7 @@ namespace AptekFarma.DTO
         public string? titulo { get; set; }
         public string? descripcion { get; set; }
         public string? importante { get; set; }
+        public string? imagen { get; set; }
         public DateTime fechaInicio { get; set; }
         public DateTime fechaFin { get; set; }
         public DateTime fechaValido { get; set; }

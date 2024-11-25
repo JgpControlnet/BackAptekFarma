@@ -184,7 +184,8 @@ namespace AptekFarma.Controllers
             var products = new List<ProductoCampanna>();
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            try {
+            try
+            {
                 using (var stream = new MemoryStream())
                 {
                     await dto.file.CopyToAsync(stream);
@@ -197,29 +198,50 @@ namespace AptekFarma.Controllers
 
                         for (int row = 2; row <= rowCount; row++)
                         {
-                            products.Add(new ProductoCampanna
+                            var codigo = worksheet.Cells[row, 1].Value != null ? int.Parse(worksheet.Cells[row, 1].Value.ToString()) : 0;
+                            var nombre = worksheet.Cells[row, 2].Value?.ToString() ?? string.Empty;
+                            var puntos = worksheet.Cells[row, 3].Value != null ? double.Parse(worksheet.Cells[row, 3].Value.ToString()) : 0;
+                            var unidadesMaximas = worksheet.Cells[row, 4].Value != null ? int.Parse(worksheet.Cells[row, 4].Value.ToString()) : 0;
+                            var laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty;
+
+                            // Verificar si el producto ya existe en la base de datos
+                            var existingProduct = await _context.ProductoCampanna.FirstOrDefaultAsync(x => x.Codigo == codigo && x.CampannaId == idCampanna);
+
+                            if (existingProduct != null)
                             {
-                                Codigo = worksheet.Cells[row, 1].Value != null ? int.Parse(worksheet.Cells[row, 1].Value.ToString()) : 0,
-                                Nombre = worksheet.Cells[row, 2].Value?.ToString() ?? string.Empty,
-                                CampannaId = idCampanna,
-                                Campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == idCampanna),
-                                Puntos = worksheet.Cells[row, 3].Value != null ? double.Parse(worksheet.Cells[row, 3].Value.ToString()) : 0,
-                                UnidadesMaximas = worksheet.Cells[row, 4].Value != null ? int.Parse(worksheet.Cells[row, 4].Value.ToString()) : 0,
-                                Laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty
-                            });
+                                // Actualizar el producto existente
+                                existingProduct.Nombre = nombre;
+                                existingProduct.Puntos = puntos;
+                                existingProduct.UnidadesMaximas = unidadesMaximas;
+                                existingProduct.Laboratorio = laboratorio;
+                            }
+                            else
+                            {
+                                // Agregar un nuevo producto
+                                products.Add(new ProductoCampanna
+                                {
+                                    Codigo = codigo,
+                                    Nombre = nombre,
+                                    CampannaId = idCampanna,
+                                    Campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == idCampanna),
+                                    Puntos = puntos,
+                                    UnidadesMaximas = unidadesMaximas,
+                                    Laboratorio = laboratorio
+                                });
+                            }
                         }
                     }
                 }
-
-
                 products = products.Where(x => x.Codigo != 0).ToList();
                 // Guardar en la base de datos
-                _context.ProductoCampanna.AddRange(products);
+                if (products.Count > 0)
+                {
+                    _context.ProductoCampanna.AddRange(products);
+                }
                 await _context.SaveChangesAsync();
 
-                var productsCamapanna = await _context.ProductoCampanna.Where(x => x.CampannaId == idCampanna).ToListAsync();
-                products = productsCamapanna;
-                return Ok(new { message = "Productos campañana importados exitosamente.", products });
+                var productsCampanna = await _context.ProductoCampanna.Where(x => x.CampannaId == idCampanna).ToListAsync();
+                return Ok(new { message = "Productos campaña importados exitosamente.", products = productsCampanna });
             }
             catch (Exception ex)
             {

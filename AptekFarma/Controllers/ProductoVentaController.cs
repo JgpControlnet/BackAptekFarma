@@ -165,9 +165,10 @@ namespace AptekFarma.Controllers
             var products = new List<AptekFarma.Models.ProductoVenta>();
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            try {
+            try
+            {
                 using (var stream = new MemoryStream())
-                { 
+                {
                     await dto.file.CopyToAsync(stream);
                     stream.Position = 0;
 
@@ -178,29 +179,51 @@ namespace AptekFarma.Controllers
 
                         for (int row = 2; row <= rowCount; row++)
                         {
-                            string cantidadstring = worksheet.Cells[row, 4]?.Text;
-                            decimal cantidadDec = decimal.TryParse(cantidadstring, out decimal dec) ? dec : 0;
-                            products.Add(new AptekFarma.Models.ProductoVenta
+                            var codProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0;
+                            var nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty;
+                            var puntosNecesarios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0;
+                            var cantidadString = worksheet.Cells[row, 4]?.Text;
+                            var cantidadMax = decimal.TryParse(cantidadString, out decimal cantidadDec) ? (int)cantidadDec : 0;
+                            var laboratorio = worksheet.Cells[row, 5]?.Value?.ToString() ?? string.Empty;
+
+                            // Verificar si el producto ya existe en la base de datos
+                            var existingProduct = await _context.ProductVenta.FirstOrDefaultAsync(x => x.CodProducto == codProducto);
+
+                            if (existingProduct != null)
                             {
-                                CodProducto = int.TryParse(worksheet.Cells[row, 1]?.Text, out int cod) ? cod : 0,
-                                Nombre = worksheet.Cells[row, 2]?.Value?.ToString() ?? string.Empty,
-                                PuntosNecesarios = decimal.TryParse(worksheet.Cells[row, 3]?.Text, out decimal precio) ? precio : 0,
-                                CantidadMax = (int)cantidadDec,
-                                Laboratorio = worksheet.Cells[row, 5].Value?.ToString() ?? string.Empty
-                            });
+                                // Actualizar el producto existente
+                                existingProduct.Nombre = nombre;
+                                existingProduct.PuntosNecesarios = puntosNecesarios;
+                                existingProduct.CantidadMax = cantidadMax;
+                                existingProduct.Laboratorio = laboratorio;
+                            }
+                            else
+                            {
+                                // Agregar un nuevo producto
+                                products.Add(new AptekFarma.Models.ProductoVenta
+                                {
+                                    CodProducto = codProducto,
+                                    Nombre = nombre,
+                                    PuntosNecesarios = puntosNecesarios,
+                                    CantidadMax = cantidadMax,
+                                    Laboratorio = laboratorio
+                                });
+                            }
                         }
                     }
                 }
-
                 products = products.Where(x => x.CodProducto != 0).ToList();
-
-                // Guardar en la base de datos
-                _context.ProductVenta.AddRange(products);
+                // Guardar los nuevos productos en la base de datos
+                if (products.Count > 0)
+                {
+                    _context.ProductVenta.AddRange(products);
+                }
                 await _context.SaveChangesAsync();
 
-                products = await _context.ProductVenta.ToListAsync();
+                // Obtener todos los productos después de la operación
+                var allProducts = await _context.ProductVenta.ToListAsync();
 
-                return Ok(new { message = "Productos importados exitosamente.", products });
+                return Ok(new { message = "Productos importados exitosamente.", products = allProducts });
             }
             catch (Exception ex)
             {

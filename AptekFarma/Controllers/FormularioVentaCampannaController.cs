@@ -245,6 +245,7 @@ namespace AptekFarma.Controllers
 
             formulario.User.Points += totalPuntosFormulario;
             formulario.EstadoFormularioID = 2;
+            formulario.EstadoFormulario = await _context.EstadoFormulario.FindAsync(2);
             formulario.TotalPuntos = totalPuntosFormulario;
 
             _context.Update(formulario);

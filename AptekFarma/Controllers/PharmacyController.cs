@@ -168,10 +168,12 @@ namespace AptekFarma.Controllers
             List<Pharmacy> pharmacies = new List<Pharmacy>();
             List<PharmacyErrorDTO> errors = new List<PharmacyErrorDTO>();
 
-            try {
+            try
+            {
                 using (var stream = new MemoryStream())
                 {
                     await dto.file.CopyToAsync(stream);
+                    stream.Position = 0; // Asegúrate de reiniciar la posición del stream
 
                     using (var package = new ExcelPackage(stream))
                     {
@@ -180,39 +182,48 @@ namespace AptekFarma.Controllers
 
                         for (int row = 2; row <= rowCount; row++)
                         {
+                            var nombre = worksheet.Cells[row, 1]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var direccion = worksheet.Cells[row, 2]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var localidad = worksheet.Cells[row, 3]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var provincia = worksheet.Cells[row, 4]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var cp = worksheet.Cells[row, 5]?.Value?.ToString()?.Trim() ?? string.Empty;
 
-                            var pharmacy = new Pharmacy
+                            // Verificar si la farmacia ya existe en la base de datos
+                            var existingPharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Nombre.Equals(nombre, StringComparison.OrdinalIgnoreCase));
+
+                            if (existingPharmacy != null)
                             {
-                                Nombre = worksheet.Cells[row, 1]?.Value?.ToString()?.Trim() ?? string.Empty,
-                                Direccion = worksheet.Cells[row, 2]?.Value?.ToString()?.Trim() ?? string.Empty,
-                                CP = worksheet.Cells[row, 5]?.Value?.ToString()?.Trim() ?? string.Empty,
-                                Localidad = worksheet.Cells[row, 3]?.Value?.ToString()?.Trim() ?? string.Empty,
-                                Provincia = worksheet.Cells[row, 4]?.Value?.ToString()?.Trim() ?? string.Empty,
-
-                            };
-
-                            //await _context.Pharmacies.AddAsync(pharmacy);
-
-                            pharmacies.Add(pharmacy);
+                                // Actualizar la farmacia existente
+                                existingPharmacy.Direccion = direccion;
+                                existingPharmacy.Localidad = localidad;
+                                existingPharmacy.Provincia = provincia;
+                                existingPharmacy.CP = cp;
+                            }
+                            else
+                            {
+                                // Agregar una nueva farmacia
+                                pharmacies.Add(new Pharmacy
+                                {
+                                    Nombre = nombre,
+                                    Direccion = direccion,
+                                    Localidad = localidad,
+                                    Provincia = provincia,
+                                    CP = cp
+                                });
+                            }
                         }
-
-                        //await _context.SaveChangesAsync();
                     }
                 }
-
-                if (errors.Count > 0)
+                pharmacies = pharmacies.Where(x => x.Nombre != null || string.IsNullOrEmpty(x.Nombre)).ToList();
+                // Guardar los nuevos registros en la base de datos
+                if (pharmacies.Count > 0)
                 {
-                    return BadRequest(new { message = "Se han encontrado errores", errors });
+                    await _context.Pharmacy.AddRangeAsync(pharmacies);
                 }
-
-                await _context.Pharmacy.AddRangeAsync(pharmacies);
 
                 await _context.SaveChangesAsync();
 
-                //importar solo las que su nombre no se vacio o nulo
-                pharmacies = pharmacies.Where(x => x.Nombre != null || string.IsNullOrEmpty(x.Nombre)).ToList();
-               
-
+                // Obtener todas las farmacias después de la operación
                 pharmacies = await _context.Pharmacy.ToListAsync();
 
                 return Ok(new { message = "Importado Correctamente", pharmacies });
@@ -221,8 +232,6 @@ namespace AptekFarma.Controllers
             {
                 return BadRequest(new { message = "Error al importar el archivo", error = ex.Message });
             }
-
-            
         }
     }
 }

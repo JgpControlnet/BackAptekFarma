@@ -151,6 +151,7 @@ namespace AptekFarma.Controllers
                 Titulo = campannaDTO.titulo,
                 Descripcion = campannaDTO.descripcion,
                 Importante = campannaDTO.importante,
+                Imagen = campannaDTO.imagen,
                 FechaInicio = campannaDTO.fechaInicio,
                 FechaFin = campannaDTO.fechaFin,
                 FechaValido = campannaDTO.fechaValido,
@@ -179,6 +180,7 @@ namespace AptekFarma.Controllers
             campanna.Nombre = campannaDTO.nombre;
             campanna.Titulo = campannaDTO.titulo;
             campanna.Importante = campannaDTO.importante;
+            campanna.Imagen = campannaDTO.imagen;
             campanna.Descripcion = campannaDTO.descripcion;
             campanna.FechaInicio = campannaDTO.fechaInicio;
             campanna.FechaFin = campannaDTO.fechaFin;
