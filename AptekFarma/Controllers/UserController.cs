@@ -241,6 +241,7 @@ namespace AptekFarma.Controllers
             user.Apellidos = usuario.apellidos;
             user.PhoneNumber = usuario.PhoneNumber;
             user.FechaNacimiento = usuario.fecha_nacimiento;
+            user.Points = usuario.Points;
             user.rol = _userManager.GetRolesAsync(usuario).Result.FirstOrDefault();
 
             return Ok(user);

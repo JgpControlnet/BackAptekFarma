@@ -20,6 +20,8 @@ namespace AptekFarma.Models
 
         public double TotalPuntos { get; set; }
 
+        public DateTime FechaCreacion { get; set; }
+
         public int EstadoFormularioID { get; set; }
         [ForeignKey("EstadoFormularioID")]
         public EstadoFormulario EstadoFormulario { get; set; }

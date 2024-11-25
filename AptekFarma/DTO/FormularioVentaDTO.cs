@@ -12,8 +12,9 @@ namespace AptekFarma.DTO
         public Campanna? campanna { get; set; }
         public IEnumerable<VentaCampanna?>? ventaCampannas { get; set; }
         public double totalPuntos { get; set; }
-
+        public DateTime? fechaCreacion { get; set; }
         public Pharmacy? farmacia { get; set; }
+        internal IEnumerable<Object> Rankings { get; set; }
 
         //añadir fecha de subida
     }

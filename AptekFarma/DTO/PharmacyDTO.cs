@@ -8,5 +8,7 @@
         public string CP { get; set; }
         public string Localidad { get; set; }
         public string Provincia { get; set; }
+
+        public double? TotalUnidadesVendidas { get; set; }
     }
 }

@@ -13,7 +13,7 @@ namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class FormularioVentaCampannaController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
@@ -81,25 +81,25 @@ namespace AptekFarma.Controllers
 
             return Ok(formulariosDTO);
         }
-
         [HttpGet("GetFormulario")]
         public async Task<IActionResult> GetFormulario([FromQuery] int formularioID)
         {
             var formulario = await _context.FormularioVenta
                 .Include(f => f.User)
+                .ThenInclude(u => u.Pharmacy)
                 .Include(f => f.Campanna)
                 .Include(f => f.EstadoFormulario)
                 .FirstOrDefaultAsync(f => f.Id == formularioID);
-
-            var ventaCampannas = _context.VentaCampanna
-                .Include(vc => vc.ProductoCampanna)
-                .Where(vc => vc.FormularioID == formularioID)
-                .ToList();
 
             if (formulario == null)
             {
                 return NotFound("Formulario no encontrado.");
             }
+
+            var ventaCampannas = _context.VentaCampanna
+                .Include(vc => vc.ProductoCampanna)
+                .Where(vc => vc.FormularioID == formularioID)
+                .ToList();
 
             var formularioDTO = new FormularioVentaDTO
             {
@@ -109,19 +109,24 @@ namespace AptekFarma.Controllers
                 {
                     Id = formulario.User.Id,
                     Nombre = formulario.User.nombre,
-                    Points = formulario.User.Points
+                    Points = formulario.User.Points,
+                    Pharmacy = formulario.User.Pharmacy != null
+                        ? new PharmacyDTO
+                        {
+                            id = formulario.User.Pharmacy.Id,
+                            Nombre = formulario.User.Pharmacy.Nombre
+                        }
+                        : null
                 },
                 estadoFormularioID = formulario.EstadoFormularioID,
                 estadoFormulario = formulario.EstadoFormulario,
                 campannaID = formulario.CampannaID,
                 campanna = formulario.Campanna,
                 ventaCampannas = ventaCampannas,
-                totalPuntos = formulario.TotalPuntos
+                fechaCreacion = formulario.FechaCreacion,
+                totalPuntos = formulario.TotalPuntos,
+                farmacia = formulario.User.Pharmacy 
             };
-
-
-            //crea 3 colecciones que haga un ranking de los productos mas vendidos, los productos mas canjeados y los productos con mas puntos
-
 
             return Ok(formularioDTO);
         }
@@ -174,6 +179,7 @@ namespace AptekFarma.Controllers
                 UserID = request.UserID,
                 CampannaID = request.CampannaID,
                 TotalPuntos = totalPuntos,
+                FechaCreacion = DateTime.Now,
                 EstadoFormularioID = 1
             };
 
