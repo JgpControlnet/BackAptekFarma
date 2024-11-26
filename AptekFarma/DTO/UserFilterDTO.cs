@@ -1,7 +1,7 @@
 ﻿using AptekFarma.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace _AptekFarma.DTO
+namespace AptekFarma.DTO
 {
     public class UserFilterDTO
     {
@@ -13,7 +13,7 @@ namespace _AptekFarma.DTO
         public string? Nif { get; set; }
         public string? FechaNacimiento { get; set; }
         public string? rol { get; set; }
-        public int PharmacyId { get; set; } = 0;
+        public int PharmacyId { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
 

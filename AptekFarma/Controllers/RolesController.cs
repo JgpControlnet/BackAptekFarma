@@ -1,6 +1,6 @@
-﻿using _AptekFarma.Models;
-using _AptekFarma.DTO;
-using _AptekFarma.Context;
+﻿using AptekFarma.Models;
+using AptekFarma.DTO;
+using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +20,7 @@ using OfficeOpenXml;
 using AptekFarma.DTO;
 
 
-namespace _AptekFarma.Controllers
+namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

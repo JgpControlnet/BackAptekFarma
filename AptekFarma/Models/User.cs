@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace _AptekFarma.Models
+namespace AptekFarma.Models
 {
     public class User : IdentityUser
     {
@@ -14,7 +14,7 @@ namespace _AptekFarma.Models
         public int? PharmacyID { get; set; }
         [ForeignKey("PharmacyID")]
         public Pharmacy? Pharmacy { get; set; }
-        public int Points { get; set; }
+        public double Points { get; set; }
         public bool RememberMe { get; set; }
     }
 }

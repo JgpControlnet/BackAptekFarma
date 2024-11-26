@@ -1,4 +1,4 @@
-﻿using _AptekFarma.DTO;
+﻿using AptekFarma.DTO;
 
 namespace AptekFarma.DTO
 {
@@ -6,6 +6,6 @@ namespace AptekFarma.DTO
     {
         public IFormFile file { get; set; }
         public bool newCampaign { get; set; }
-        public CampaignDTO? campaignDTO { get; set; }
+        public CampannaDTO? campaignDTO { get; set; }
     }
 }

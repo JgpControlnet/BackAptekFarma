@@ -1,4 +1,4 @@
-﻿namespace _AptekFarma.DTO
+﻿namespace AptekFarma.DTO
 {
     public class RegisterDTO
     {
