@@ -1,6 +1,6 @@
-﻿using _AptekFarma.Models;
-using _AptekFarma.DTO;
-using _AptekFarma.Context;
+﻿using AptekFarma.Models;
+using AptekFarma.DTO;
+using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +20,7 @@ using OfficeOpenXml;
 using AptekFarma.DTO;
 
 
-namespace _AptekFarma.Controllers
+namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -69,7 +69,7 @@ namespace _AptekFarma.Controllers
             {
                 await _roleManager.CreateAsync(new Roles { Name = rol.Name, Descripcion = rol.Descripcion });
             }
-            return Ok(rol);
+            return Ok(new { message = "Rol creado correctamente" });
         }
 
         [HttpPut("UpdateRole")]
@@ -85,7 +85,7 @@ namespace _AptekFarma.Controllers
             role.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? role.Descripcion : dto.Descripcion;
 
             await _roleManager.UpdateAsync(role);
-            return Ok(role);
+            return Ok(new { message = "Rol modificado correctamente" });
         }
 
         [HttpDelete("DeleteRole")]
@@ -95,11 +95,11 @@ namespace _AptekFarma.Controllers
 
             if (role == null)
             {
-                return NotFound("Rol no encontrado");
+                return NotFound(new { message = "Rol no encontrado" });
             }
 
             await _roleManager.DeleteAsync(role);
-            return Ok("Rol eliminado correctamente");
+            return Ok(new { message = "Rol eliminado correctamente" });
         }
 
     }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace _AptekFarma.Models
+namespace AptekFarma.Models
 {
     public class Roles : IdentityRole
     {

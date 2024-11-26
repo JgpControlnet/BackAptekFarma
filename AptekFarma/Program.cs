@@ -1,5 +1,5 @@
-using _AptekFarma.Context;
-using _AptekFarma.Models;
+using AptekFarma.Context;
+using AptekFarma.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +34,6 @@ builder.Services.AddSwaggerGen(setup =>
             Type = ReferenceType.SecurityScheme
         }
     };
-
 
     setup.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
 
@@ -90,13 +89,7 @@ builder.Services.AddCors(options =>
         });
 });
 
-
-
 builder.Services.AddHttpClient();
-
-
-
-
 
 //Serilog Config
 builder.Host.UseSerilog((context, configuration) =>
@@ -126,6 +119,8 @@ app.UseSerilogRequestLogging();
 //app.UseHttpsRedirection();
 
 app.UseAuthorization();
+app.UseStaticFiles(); // Habilitar archivos estáticos
+
 
 app.MapControllers();
 app.UseCors();

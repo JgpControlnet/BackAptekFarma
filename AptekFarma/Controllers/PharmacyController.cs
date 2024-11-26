@@ -1,6 +1,6 @@
-﻿using _AptekFarma.Models;
-using _AptekFarma.DTO;
-using _AptekFarma.Context;
+﻿using AptekFarma.Models;
+using AptekFarma.DTO;
+using AptekFarma.Context;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -17,9 +17,12 @@ using System.Security.Cryptography;
 using System.Text;
 using AptekFarma.Models;
 using OfficeOpenXml;
+using AptekFarma.Controllers;
+using AptekFarma.DTO;
+using System.Globalization;
 
 
-namespace _AptekFarma.Controllers
+namespace AptekFarma.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -45,10 +48,15 @@ namespace _AptekFarma.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet("GetAllPharmacies")]
-        public async Task<IActionResult> GetPharmacies([FromQuery] PharmacyFilterDTO filtro)
+        [HttpPost("GetAllPharmacies")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPharmacies([FromBody] PharmacyFilterDTO filtro)
         {
-            var pharmacies = await _context.Pharmacies.ToListAsync();
+            var pharmacies = await _context.Pharmacy
+                .ToListAsync();
+
+            if (filtro.Todas)
+                return Ok(pharmacies);
 
             if (filtro != null)
             {
@@ -66,21 +74,21 @@ namespace _AptekFarma.Controllers
             // Paginación
             int totalItems = pharmacies.Count;
             var paginatedPharmacies = pharmacies
-                .Skip((filtro.PageNumber - 1) * filtro.PageSize)
-                .Take(filtro.PageSize)
-                .ToList();
-
+            .Skip((filtro.PageNumber - 1) * filtro.PageSize)
+            .Take(filtro.PageSize)
+            .ToList();
             return Ok(paginatedPharmacies);
+
         }
 
         [HttpGet("GetPharmacyById")]
         public async Task<IActionResult> GetPharmacyById(int id)
         {
-            var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == id);
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id);
 
             if (pharmacy == null)
             {
-                return NotFound("No se ha encontrado Farmacia");
+                return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
             return Ok(pharmacy);
@@ -89,88 +97,141 @@ namespace _AptekFarma.Controllers
         [HttpPost("CreatePharmacy")]
         public async Task<IActionResult> CreatePharmacy(PharmacyDTO pharmacyDTO)
         {
+
             var pharmacy = new Pharmacy
             {
                 Nombre = pharmacyDTO.Nombre,
-                Direccion = pharmacyDTO.Direccion
+                Direccion = pharmacyDTO.Direccion,
+                CP = pharmacyDTO.CP,
+                Localidad = pharmacyDTO.Localidad,
+                Provincia =  pharmacyDTO.Provincia
             };
 
-            await _context.Pharmacies.AddAsync(pharmacy);
+            await _context.Pharmacy.AddAsync(pharmacy);
             await _context.SaveChangesAsync();
+            var pharmacies = await _context.Pharmacy.ToListAsync();
 
-            return Ok(pharmacy);
+            return Ok(new { message = "Farmacia creada correctamente", pharmacies });
         }
 
         [HttpPut("UpdatePharmacy")]
-        public async Task<IActionResult> UpdatePharmacy(int pharmacyId, [FromBody] PharmacyDTO pharmacyDTO)
+        public async Task<IActionResult> UpdatePharmacy([FromBody] PharmacyDTO pharmacyDTO)
         {
-            var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == pharmacyId);
+            var pharmacy = await _context.Pharmacy
+                .FirstOrDefaultAsync(x => x.Id == pharmacyDTO.id);
 
+          
             if (pharmacy == null)
             {
-                return NotFound("No se ha encontrado Farmacia");
+                return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
             pharmacy.Nombre = pharmacyDTO.Nombre;
             pharmacy.Direccion = pharmacyDTO.Direccion;
+            pharmacy.CP = pharmacyDTO.CP;
+            pharmacy.Provincia = pharmacyDTO.Provincia;
+            pharmacy.Localidad = pharmacyDTO.Localidad;
 
-            _context.Pharmacies.Update(pharmacy);
+            _context.Pharmacy.Update(pharmacy);
             await _context.SaveChangesAsync();
+            var pharmacies = await _context.Pharmacy.ToListAsync();
 
-            return Ok(pharmacy);
+            return Ok(new { message = "Farmacia editada correctamente", pharmacies });
         }
 
         [HttpDelete("DeletePharmacy")]
         public async Task<IActionResult> DeletePharmacy(int id)
         {
-            var pharmacy = await _context.Pharmacies.FirstOrDefaultAsync(x => x.Id == id);
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id);
 
             if (pharmacy == null)
             {
-                return NotFound("No se ha encontrado Farmacia");
+                return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
-            _context.Pharmacies.Remove(pharmacy);
+            _context.Pharmacy.Remove(pharmacy);
             await _context.SaveChangesAsync();
-
-            return Ok("Farmacia eliminda correctamente");
+            var pharmacies = await _context.Pharmacy.ToListAsync();
+            return Ok(new { message = "Importado Correctamente", pharmacies });
         }
 
         [HttpPost("ImportPharmaciesExcel")]
-        public async Task<IActionResult> ImportPharmacies(IFormFile file)
+        public async Task<IActionResult> ImportPharmacies([FromForm] FileDTO dto)
         {
-            if (file?.Length == 0 || Path.GetExtension(file.FileName)?.ToLower() != ".xlsx")
+            if (dto.file?.Length == 0 || (Path.GetExtension(dto.file.FileName)?.ToLower() != ".xlsx" && Path.GetExtension(dto.file.FileName)?.ToLower() != ".xls" && Path.GetExtension(dto.file.FileName)?.ToLower() != ".csv"))
             {
-                return BadRequest("Debe proporcionar un archivo .xlsx");
+                return BadRequest(new { message = "Debe proporcionar un archivo .xlsx, .xls o .csv" });
             }
 
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-            using (var stream = new MemoryStream())
+            List<Pharmacy> pharmacies = new List<Pharmacy>();
+            List<PharmacyErrorDTO> errors = new List<PharmacyErrorDTO>();
+
+            try
             {
-                await file.CopyToAsync(stream);
-
-                using (var package = new ExcelPackage(stream))
+                using (var stream = new MemoryStream())
                 {
-                    ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-                    int rowCount = worksheet.Dimension.Rows;
+                    await dto.file.CopyToAsync(stream);
+                    stream.Position = 0; // Asegúrate de reiniciar la posición del stream
 
-                    for (int row = 2; row <= rowCount; row++)
+                    using (var package = new ExcelPackage(stream))
                     {
-                        var pharmacy = new Pharmacy
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                        int rowCount = worksheet.Dimension.Rows;
+
+                        for (int row = 2; row <= rowCount; row++)
                         {
-                            Nombre = worksheet.Cells[row, 1].Value.ToString(),
-                            Direccion = worksheet.Cells[row, 2].Value.ToString()
-                        };
+                            var nombre = worksheet.Cells[row, 1]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var direccion = worksheet.Cells[row, 2]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var localidad = worksheet.Cells[row, 3]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var provincia = worksheet.Cells[row, 4]?.Value?.ToString()?.Trim() ?? string.Empty;
+                            var cp = worksheet.Cells[row, 5]?.Value?.ToString()?.Trim() ?? string.Empty;
 
-                        await _context.Pharmacies.AddAsync(pharmacy);
+                            // Verificar si la farmacia ya existe en la base de datos
+                            var existingPharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Nombre.Equals(nombre, StringComparison.OrdinalIgnoreCase));
+
+                            if (existingPharmacy != null)
+                            {
+                                // Actualizar la farmacia existente
+                                existingPharmacy.Direccion = direccion;
+                                existingPharmacy.Localidad = localidad;
+                                existingPharmacy.Provincia = provincia;
+                                existingPharmacy.CP = cp;
+                            }
+                            else
+                            {
+                                // Agregar una nueva farmacia
+                                pharmacies.Add(new Pharmacy
+                                {
+                                    Nombre = nombre,
+                                    Direccion = direccion,
+                                    Localidad = localidad,
+                                    Provincia = provincia,
+                                    CP = cp
+                                });
+                            }
+                        }
                     }
-
-                    await _context.SaveChangesAsync();
                 }
-            }
+                pharmacies = pharmacies.Where(x => x.Nombre != null || string.IsNullOrEmpty(x.Nombre)).ToList();
+                // Guardar los nuevos registros en la base de datos
+                if (pharmacies.Count > 0)
+                {
+                    await _context.Pharmacy.AddRangeAsync(pharmacies);
+                }
 
-            return Ok("Importado Correctamente");
+                await _context.SaveChangesAsync();
+
+                // Obtener todas las farmacias después de la operación
+                pharmacies = await _context.Pharmacy.ToListAsync();
+
+                return Ok(new { message = "Importado Correctamente", pharmacies });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Error al importar el archivo", error = ex.Message });
+            }
         }
     }
 }
