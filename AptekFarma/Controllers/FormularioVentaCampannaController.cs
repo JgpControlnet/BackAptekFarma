@@ -61,12 +61,7 @@ namespace AptekFarma.Controllers
             {
                 id = f.Id,
                 userID = f.UserID,
-                user = new UserDTO
-                {
-                    Id = f.User.Id,
-                    Nombre = f.User.nombre,
-                    Points = f.User.Points
-                },
+                user = f.User,
                 estadoFormularioID = f.EstadoFormularioID,
                 estadoFormulario = f.EstadoFormulario,
                 campannaID = f.CampannaID,
@@ -76,7 +71,8 @@ namespace AptekFarma.Controllers
                     .Where(vc => vc.FormularioID == f.Id)
                     .ToList(),
                 totalPuntos = f.TotalPuntos,
-                farmacia = f.User.Pharmacy
+                farmacia = f.User.Pharmacy,
+                fechaCreacion = f.FechaCreacion
             });
 
             return Ok(formulariosDTO);
@@ -105,19 +101,7 @@ namespace AptekFarma.Controllers
             {
                 id = formulario.Id,
                 userID = formulario.UserID,
-                user = new UserDTO
-                {
-                    Id = formulario.User.Id,
-                    Nombre = formulario.User.nombre,
-                    Points = formulario.User.Points,
-                    Pharmacy = formulario.User.Pharmacy != null
-                        ? new PharmacyDTO
-                        {
-                            id = formulario.User.Pharmacy.Id,
-                            Nombre = formulario.User.Pharmacy.Nombre
-                        }
-                        : null
-                },
+                user = formulario.User,
                 estadoFormularioID = formulario.EstadoFormularioID,
                 estadoFormulario = formulario.EstadoFormulario,
                 campannaID = formulario.CampannaID,
