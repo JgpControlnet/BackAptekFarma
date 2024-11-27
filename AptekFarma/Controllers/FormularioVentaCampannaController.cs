@@ -210,7 +210,8 @@ namespace AptekFarma.Controllers
 
             if (requestValidar.idEstado == 3)
             {
-                formulario.EstadoFormulario = await _context.EstadoFormulario.Where(ef => ef.Id == 3).FirstOrDefaultAsync();
+                formulario.EstadoFormularioID = 3;
+                formulario.EstadoFormulario = await _context.EstadoFormulario.FindAsync(3);
                 await _context.SaveChangesAsync();
                 return Ok(new { Message = "Formulario de venta anulado.", TotalPuntos = 0, formulario = formulario });
             }
