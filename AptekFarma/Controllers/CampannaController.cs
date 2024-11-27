@@ -289,6 +289,7 @@ namespace AptekFarma.Controllers
                     id = campanna.Id,
                     nombre = campanna.Nombre,
                     titulo = campanna.Titulo,
+                    imagen = campanna.Imagen,
                     importante = campanna.Importante,
                     descripcion = campanna.Descripcion,
                     fechaInicio = campanna.FechaInicio,
