@@ -262,12 +262,11 @@ namespace AptekFarma.Controllers
                 .Where(c => c.Activo == true)
                 .ToListAsync();
 
+            var campannaDTOs = new List<CampannaDTO>();
             if (campannas == null || !campannas.Any())
             {
-                return NotFound("No se encontraron campañas.");
+                return Ok(campannaDTOs);
             }
-
-            var campannaDTOs = new List<CampannaDTO>();
 
             foreach (var campanna in campannas)
             {
