@@ -7,6 +7,7 @@ using AptekFarma.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using AptekFarma.Migrations;
+using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 
 namespace AptekFarma.Controllers
@@ -147,7 +148,14 @@ namespace AptekFarma.Controllers
                     return NotFound($"Producto con ID {producto.ProductoCampannaID} no encontrado.");
                 }
 
-                var puntosProducto = producto.Cantidad * productoCampanna.Puntos;
+                int cantidadCanjeada = Math.Min(producto.Cantidad, productoCampanna.UnidadesMaximas);
+                if (cantidadCanjeada == 0)
+                {
+                    continue;
+                }
+
+
+                var puntosProducto = cantidadCanjeada * productoCampanna.Puntos;
                 totalPuntos += puntosProducto;
 
                 ventas.Add(new VentaCampanna
@@ -198,6 +206,13 @@ namespace AptekFarma.Controllers
             if (formulario.EstadoFormularioID == 2)
             {
                 return BadRequest("El formulario ya ha sido validado.");
+            }
+
+            if (requestValidar.idEstado == 3)
+            {
+                formulario.EstadoFormulario = await _context.EstadoFormulario.Where(ef => ef.Id == 3).FirstOrDefaultAsync();
+                await _context.SaveChangesAsync();
+                return Ok(new { Message = "Formulario de venta anulado.", TotalPuntos = 0, formulario = formulario });
             }
 
             double totalPuntosFormulario = 0;
@@ -275,6 +290,7 @@ namespace AptekFarma.Controllers
     {
         public int formularioID { get; set; }
         public List<VentaCampanna> ventaCampannas { get; set; }
+        public int idEstado { get; set; }
 
     }
 }
