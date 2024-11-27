@@ -26,7 +26,9 @@ namespace AptekFarma.Controllers
         [HttpPost("GetAllCampannas")]
         public async Task<IActionResult> GetAllCampannas()
         {
-            return Ok(await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync());
+            return Ok(await _context.Campanna.Include(c => c.EstadoCampanna)
+                .Where(c => c.EstadoCampanna.Id == 1)
+                .ToListAsync());
         }
 
         [HttpGet("GetCampannaById")]
@@ -142,7 +144,7 @@ namespace AptekFarma.Controllers
 
 
         [HttpPost("CreateCampanna")]
-        public async Task<IActionResult> CreateCampanna(CampannaDTO campannaDTO)
+        public async Task<IActionResult> CreateCampanna(CrearCampannaDTO campannaDTO)
         {
 
             var campanna = new Campanna
@@ -155,18 +157,29 @@ namespace AptekFarma.Controllers
                 FechaInicio = campannaDTO.fechaInicio,
                 FechaFin = campannaDTO.fechaFin,
                 FechaValido = campannaDTO.fechaValido,
-                EstadoCampannaId = 1
             };
+
+            // Asignar el estado de la campaña dependiendo de si la fecha actual está entre la fecha de inicio y fin
+            if (DateTime.Now.Date >= campanna.FechaInicio.Date && DateTime.Now.Date <= campanna.FechaFin.Date)
+            {
+                campanna.EstadoCampanna = await _context.EstadoCampanna.FirstOrDefaultAsync(x => x.Id == 1);
+            }
+            else
+            {
+                campanna.EstadoCampanna = await _context.EstadoCampanna.FirstOrDefaultAsync(x => x.Id == 2);
+            }
 
             await _context.Campanna.AddAsync(campanna);
             await _context.SaveChangesAsync();
-            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync();
+            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
+                .Where(c => c.EstadoCampanna.Id == 1)
+                .ToListAsync();
 
             return Ok(new { message = "Campaña creada correctamente", campannas });
         }
 
         [HttpPut("UpdateCampanna")]
-        public async Task<IActionResult> UpdateCampanna([FromBody] CampannaDTO campannaDTO)
+        public async Task<IActionResult> UpdateCampanna([FromBody] UpdateCampannaDTO campannaDTO)
         {
             var campanna = await _context.Campanna
                 .FirstOrDefaultAsync(x => x.Id == campannaDTO.id);
@@ -180,12 +193,25 @@ namespace AptekFarma.Controllers
             campanna.Nombre = campannaDTO.nombre;
             campanna.Titulo = campannaDTO.titulo;
             campanna.Importante = campannaDTO.importante;
-            campanna.Imagen = campannaDTO.imagen;
             campanna.Descripcion = campannaDTO.descripcion;
             campanna.FechaInicio = campannaDTO.fechaInicio;
             campanna.FechaFin = campannaDTO.fechaFin;
             campanna.FechaValido = campannaDTO.fechaValido;
-            campanna.EstadoCampannaId = campannaDTO.estadoCampanna.Id;
+
+            if(campannaDTO.imagen != null)
+            {
+                campanna.Imagen = campannaDTO.imagen;
+            }
+
+            // Asignar el estado de la campaña dependiendo de si la fecha actual está entre la fecha de inicio y fin
+            if (DateTime.Now.Date >= campanna.FechaInicio.Date && DateTime.Now.Date <= campanna.FechaFin.Date)
+            {
+                campanna.EstadoCampanna = await _context.EstadoCampanna.FirstOrDefaultAsync(x => x.Id == 1);
+            }
+            else
+            {
+                campanna.EstadoCampanna = await _context.EstadoCampanna.FirstOrDefaultAsync(x => x.Id == 2);
+            }
 
 
             _context.Campanna.Update(campanna);
@@ -198,16 +224,20 @@ namespace AptekFarma.Controllers
         [HttpDelete("DeleteCampanna")]
         public async Task<IActionResult> DeleteCampanna(int id)
         {
-            var campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == id);
+            var campanna = await _context.Campanna
+                .Include(c => c.EstadoCampanna)
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (campanna == null)
             {
                 return NotFound(new { message = "No se ha encontrado Campaña" });
             }
 
-            _context.Campanna.Remove(campanna);
+            campanna.EstadoCampanna = await _context.EstadoCampanna.FirstOrDefaultAsync(x => x.Id == 2);
             await _context.SaveChangesAsync();
-            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync();
+            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
+                .Where(c => c.EstadoCampanna.Id == 1)
+                .ToListAsync();
             return Ok(new { message = "Eliminada Correctamente", campannas });
         }
         [HttpGet("GetCampannaInformes")]
@@ -226,6 +256,7 @@ namespace AptekFarma.Controllers
 
             var campannas = await _context.Campanna
                 .Include(c => c.EstadoCampanna)
+                .Where(c => c.EstadoCampanna.Id == 1)
                 .ToListAsync();
 
             if (campannas == null || !campannas.Any())

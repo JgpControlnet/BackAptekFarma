@@ -21,6 +21,7 @@ namespace AptekFarma.Models
         public int  EstadoCampannaId { get; set; }
         [ForeignKey("EstadoCampannaId")]
         public EstadoCampanna? EstadoCampanna { get; set; }
+        //public bool Activo { get; set; }
 
     }
 }
