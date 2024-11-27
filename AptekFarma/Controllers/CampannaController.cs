@@ -157,6 +157,7 @@ namespace AptekFarma.Controllers
                 FechaInicio = campannaDTO.fechaInicio,
                 FechaFin = campannaDTO.fechaFin,
                 FechaValido = campannaDTO.fechaValido,
+                Activo = true
             };
 
             // Asignar el estado de la campaña dependiendo de si la fecha actual está entre la fecha de inicio y fin
