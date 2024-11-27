@@ -27,7 +27,7 @@ namespace AptekFarma.Controllers
         public async Task<IActionResult> GetAllCampannas()
         {
             return Ok(await _context.Campanna.Include(c => c.EstadoCampanna)
-                .Where(c => c.EstadoCampanna.Id == 1)
+                .Where(c => c.Activo == true)
                 .ToListAsync());
         }
 
@@ -172,7 +172,7 @@ namespace AptekFarma.Controllers
             await _context.Campanna.AddAsync(campanna);
             await _context.SaveChangesAsync();
             var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
-                .Where(c => c.EstadoCampanna.Id == 1)
+                .Where(c => c.Activo == true)
                 .ToListAsync();
 
             return Ok(new { message = "Campaña creada correctamente", campannas });
@@ -216,7 +216,9 @@ namespace AptekFarma.Controllers
 
             _context.Campanna.Update(campanna);
             await _context.SaveChangesAsync();
-            var campannas = await _context.Campanna.Include(c => c.EstadoCampanna).ToListAsync();
+            var campannas = await _context.Campanna
+                .Where(c => c.Activo == true)
+                .Include(c => c.EstadoCampanna).ToListAsync();
 
             return Ok(new { message = "Campaña editada correctamente", campannas });
         }
@@ -233,10 +235,10 @@ namespace AptekFarma.Controllers
                 return NotFound(new { message = "No se ha encontrado Campaña" });
             }
 
-            campanna.EstadoCampanna = await _context.EstadoCampanna.FirstOrDefaultAsync(x => x.Id == 2);
+            campanna.Activo = false;
             await _context.SaveChangesAsync();
             var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
-                .Where(c => c.EstadoCampanna.Id == 1)
+                .Where(c => c.Activo == true)
                 .ToListAsync();
             return Ok(new { message = "Eliminada Correctamente", campannas });
         }
@@ -256,7 +258,7 @@ namespace AptekFarma.Controllers
 
             var campannas = await _context.Campanna
                 .Include(c => c.EstadoCampanna)
-                .Where(c => c.EstadoCampanna.Id == 1)
+                .Where(c => c.Activo == true)
                 .ToListAsync();
 
             if (campannas == null || !campannas.Any())
