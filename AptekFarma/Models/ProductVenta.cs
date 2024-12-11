@@ -16,6 +16,7 @@ namespace AptekFarma.Models
         public decimal PuntosNecesarios { get; set; }
         public int CantidadMax { get; set; }
         public string Laboratorio { get; set; }
+        public bool Activo { get; set; } = true;
 
     }
 }
