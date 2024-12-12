@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Humanizer;
 
 
 namespace AptekFarma.Controllers
@@ -160,6 +161,11 @@ namespace AptekFarma.Controllers
                 Activo = true
             };
 
+            if (campannaDTO.video != null)
+            {
+                campanna.Video = campannaDTO.video;
+            }
+
             // Asignar el estado de la campaña dependiendo de si la fecha actual está entre la fecha de inicio y fin
             if (DateTime.Now.Date >= campanna.FechaInicio.Date && DateTime.Now.Date <= campanna.FechaFin.Date)
             {
@@ -172,6 +178,34 @@ namespace AptekFarma.Controllers
 
             await _context.Campanna.AddAsync(campanna);
             await _context.SaveChangesAsync();
+
+            if (campannaDTO.pdf != null)
+            {
+
+                // Crear la carpeta si no existe
+                var folderPath = Path.Combine("wwwroot", "campannas", "pdfs", campanna.Id.ToString());
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                var imagePath = Path.Combine(folderPath, campannaDTO.pdf.FileName);
+
+                // Guardar la imagen en la carpeta estática
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await campannaDTO.pdf.CopyToAsync(stream);
+                }
+
+                // Guardar la URL relativa en la base de datos
+                var relativeImagePath = Path.Combine("campannas", "pdfs", campanna.Id.ToString(), campannaDTO.pdf.FileName);
+                // Reeemplazar las barras invertidas por barras normales
+                relativeImagePath = relativeImagePath.Replace("\\", "/");
+
+                campanna.PDF = relativeImagePath;
+                _context.Campanna.Update(campanna);
+            }
+
             var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
                 .Where(c => c.Activo == true)
                 .ToListAsync();
@@ -204,6 +238,11 @@ namespace AptekFarma.Controllers
                 campanna.Imagen = campannaDTO.imagen;
             }
 
+            if (campannaDTO.video != null)
+            {
+                campanna.Video = campannaDTO.video;
+            }
+
             // Asignar el estado de la campaña dependiendo de si la fecha actual está entre la fecha de inicio y fin
             if (DateTime.Now.Date >= campanna.FechaInicio.Date && DateTime.Now.Date <= campanna.FechaFin.Date)
             {
@@ -217,6 +256,34 @@ namespace AptekFarma.Controllers
 
             _context.Campanna.Update(campanna);
             await _context.SaveChangesAsync();
+
+            if (campannaDTO.pdf != null)
+            {
+
+                // Crear la carpeta si no existe
+                var folderPath = Path.Combine("wwwroot", "campannas", "pdfs", campanna.Id.ToString());
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                var imagePath = Path.Combine(folderPath, campannaDTO.pdf.FileName);
+
+                // Guardar la imagen en la carpeta estática
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await campannaDTO.pdf.CopyToAsync(stream);
+                }
+
+                // Guardar la URL relativa en la base de datos
+                var relativeImagePath = Path.Combine("campannas", "pdfs", campanna.Id.ToString(), campannaDTO.pdf.FileName);
+                // Reeemplazar las barras invertidas por barras normales
+                relativeImagePath = relativeImagePath.Replace("\\", "/");
+
+                campanna.PDF = relativeImagePath;
+                _context.Campanna.Update(campanna);
+            }
+
             var campannas = await _context.Campanna
                 .Where(c => c.Activo == true)
                 .Include(c => c.EstadoCampanna).ToListAsync();
