@@ -160,7 +160,7 @@ namespace AptekFarma.Controllers
 
                 ventas.Add(new VentaCampanna
                 {
-                    PorductoCampannaID = producto.ProductoCampannaID,
+                    ProductoCampannaID = producto.ProductoCampannaID,
                     Cantidad = producto.Cantidad,
                     TotalPuntos = puntosProducto
                 });
@@ -232,14 +232,16 @@ namespace AptekFarma.Controllers
                     continue;
                 }
 
-                totalPuntosFormulario += cantidadCanjeada * producto.Puntos;
+                totalPuntosFormulario += cantidadCanjeada * 
+                    //producto.Puntos;
+                    venta.TotalPuntos;
 
            
                 producto.UnidadesMaximas -= cantidadCanjeada;
                 _context.Entry(producto).State = EntityState.Modified;
 
                 venta.Cantidad = cantidadCanjeada;
-                venta.TotalPuntos = cantidadCanjeada * producto.Puntos;
+                //venta.TotalPuntos = cantidadCanjeada * producto.Puntos;
                 await UpdateVentaCampanna(venta);
             }
 

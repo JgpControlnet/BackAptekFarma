@@ -58,7 +58,7 @@ namespace AptekFarma.Controllers
                 {
                     Product = product,
                     TotalSold = _context.VentaCampanna
-                        .Where(vc => vc.PorductoCampannaID == product.Id)
+                        .Where(vc => vc.ProductoCampannaID == product.Id)
                         .Sum(vc => (int?)vc.Cantidad) ?? 0 // Manejar nulos con ?? 0
                 });
 

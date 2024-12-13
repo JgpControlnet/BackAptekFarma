@@ -9,8 +9,8 @@ namespace AptekFarma.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public int PorductoCampannaID { get; set; }
-        [ForeignKey("PorductoCampannaID")]
+        public int ProductoCampannaID { get; set; }
+        [ForeignKey("ProductoCampannaID")]
         public ProductoCampanna ProductoCampanna { get; set; }
         public int Cantidad { get; set; }
         public double TotalPuntos { get; set; }
