@@ -145,7 +145,7 @@ namespace AptekFarma.Controllers
 
 
         [HttpPost("CreateCampanna")]
-        public async Task<IActionResult> CreateCampanna(CrearCampannaDTO campannaDTO)
+        public async Task<IActionResult> CreateCampanna([FromForm]CrearCampannaDTO campannaDTO)
         {
 
             var campanna = new Campanna
