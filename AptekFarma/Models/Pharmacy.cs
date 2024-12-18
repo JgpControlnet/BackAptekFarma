@@ -16,6 +16,7 @@ namespace AptekFarma.Models
         public string? Imagen { get; set; }
         public string? Localidad { get; set; }
         public string? Provincia { get; set; }
+        public bool Activo { get; set; } = true;
 
 
         //public int? LocalidadID { get; set; }

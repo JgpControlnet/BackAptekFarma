@@ -5,7 +5,7 @@ namespace AptekFarma.DTO
     {
         public int id { get; set; }
         public string userID { get; set; }
-        public UserDTO? user { get; set; }
+        public User? user { get; set; }
         public int? estadoFormularioID { get; set; }
         public EstadoFormulario? estadoFormulario { get; set; }
         public int campannaID { get; set; }

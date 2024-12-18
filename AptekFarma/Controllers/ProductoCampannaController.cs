@@ -53,8 +53,14 @@ namespace AptekFarma.Controllers
         {
             // Incluye la relación de campaña al obtener los productos
             var query = _context.ProductoCampanna
-                .Include(p => p.Campanna)
-                .AsQueryable();
+                .Where(x => x.Activo == true)
+                .Select(product => new
+                {
+                    Product = product,
+                    TotalSold = _context.VentaCampanna
+                        .Where(vc => vc.ProductoCampannaID == product.Id)
+                        .Sum(vc => (int?)vc.Cantidad) ?? 0 // Manejar nulos con ?? 0
+                });
 
             if (filtro.Todas)
                 return Ok(await query.ToListAsync());
@@ -64,20 +70,22 @@ namespace AptekFarma.Controllers
                 // Filtra por nombre
                 if (!string.IsNullOrEmpty(filtro.nombre))
                 {
-                    query = query.Where(x => x.Nombre.ToLower().Contains(filtro.nombre.ToLower()));
+                    query = query.Where(x => x.Product.Nombre.ToLower().Contains(filtro.nombre.ToLower()));
                 }
 
-                // Filtra por precio
-                if (filtro.precio > 0)
+                if (filtro.puntosNecesarios > 0)
                 {
-                    query = query.Where(x => x.Puntos == filtro.precio);
+                    query = query.Where(x => x.Product.Puntos == filtro.puntosNecesarios);
                 }
 
                 // Filtra por campaña
                 if (filtro.campannaId > 0)
                 {
-                    query = query.Where(x => x.CampannaId == filtro.campannaId);
+                    query = query.Where(x => x.Product.CampannaId == filtro.campannaId);
                 }
+
+                // Solo activos
+                query = query.Where(x => x.Product.Activo == true);
             }
 
             // Paginación
@@ -97,7 +105,7 @@ namespace AptekFarma.Controllers
         [HttpGet("GetProductById")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _context.ProductoCampanna.Include(x => x.Campanna).FirstOrDefaultAsync(x => x.Id == id);
+            var product = await _context.ProductoCampanna.Include(x => x.Campanna).FirstOrDefaultAsync(x => x.Id == id && x.Activo == true);
 
             if (product == null)
             {
@@ -166,7 +174,8 @@ namespace AptekFarma.Controllers
                 return NotFound(new { message = "No se ha encontrado Producto" });
             }
 
-            _context.ProductoCampanna.Remove(product);
+            product.Activo = false;
+            _context.ProductoCampanna.Update(product);
             await _context.SaveChangesAsync();
             var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId).ToListAsync();
             
@@ -226,7 +235,8 @@ namespace AptekFarma.Controllers
                                     Campanna = await _context.Campanna.FirstOrDefaultAsync(x => x.Id == idCampanna),
                                     Puntos = puntos,
                                     UnidadesMaximas = unidadesMaximas,
-                                    Laboratorio = laboratorio
+                                    Laboratorio = laboratorio,
+                                    Activo = true
                                 });
                             }
                         }

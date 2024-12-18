@@ -53,6 +53,7 @@ namespace AptekFarma.Controllers
         public async Task<IActionResult> GetPharmacies([FromBody] PharmacyFilterDTO filtro)
         {
             var pharmacies = await _context.Pharmacy
+                .Where(x => x.Activo == true)
                 .ToListAsync();
 
             if (filtro.Todas)
@@ -84,7 +85,7 @@ namespace AptekFarma.Controllers
         [HttpGet("GetPharmacyById")]
         public async Task<IActionResult> GetPharmacyById(int id)
         {
-            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id);
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id && x.Activo == true);
 
             if (pharmacy == null)
             {
@@ -149,7 +150,8 @@ namespace AptekFarma.Controllers
                 return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
-            _context.Pharmacy.Remove(pharmacy);
+            pharmacy.Activo = false;
+            _context.Pharmacy.Update(pharmacy);
             await _context.SaveChangesAsync();
             var pharmacies = await _context.Pharmacy.ToListAsync();
             return Ok(new { message = "Importado Correctamente", pharmacies });
@@ -208,7 +210,8 @@ namespace AptekFarma.Controllers
                                     Direccion = direccion,
                                     Localidad = localidad,
                                     Provincia = provincia,
-                                    CP = cp
+                                    CP = cp,
+                                    Activo = true
                                 });
                             }
                         }

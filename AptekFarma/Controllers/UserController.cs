@@ -244,7 +244,41 @@ namespace AptekFarma.Controllers
             user.Points = usuario.Points;
             user.rol = _userManager.GetRolesAsync(usuario).Result.FirstOrDefault();
 
-            return Ok(user);
+            var ventas = await _context.VentaPuntos
+                .Include(v => v.User)
+                .Include(v => v.Product)
+                .Where(v => v.UserID == user.Id)
+                .OrderByDescending(v => v.FechaCompra)
+                .ToListAsync();
+
+            var ventasDTO = new object();
+
+            if (ventas == null || !ventas.Any())
+            {
+                ventasDTO = null;
+            }
+            else
+            {
+                ventasDTO = ventas.Select(v => new
+                {
+                    v.Id,
+                    v.UserID,
+                    Usuario = v.User?.UserName,
+                    v.ProductID,
+                    Producto = v.Product?.Nombre,
+                    v.Cantidad,
+                    v.PuntosTotales,
+                    v.FechaCompra
+                });
+            }
+
+            var response = new
+            {
+                User = user,
+                Ventas = ventasDTO
+            };
+
+            return Ok(response);
         }
 
        
@@ -355,7 +389,8 @@ namespace AptekFarma.Controllers
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Issuer"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(24),
+                //expires: DateTime.Now.AddHours(24),
+                expires: DateTime.Now.AddMonths(1),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

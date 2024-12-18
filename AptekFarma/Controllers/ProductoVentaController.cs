@@ -51,7 +51,9 @@ namespace AptekFarma.Controllers
         [HttpPost("GetAllProducts")]
         public async Task<IActionResult> GetProducts([FromBody] ProductFilterDTO filtro)
         {
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductVenta
+                .Where(x => x.Activo == true)
+                .ToListAsync();
 
             if (filtro.Todas)
                 return Ok(products);
@@ -84,7 +86,7 @@ namespace AptekFarma.Controllers
         [HttpGet("GetProductById")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == id);
+            var product = await _context.ProductVenta.FirstOrDefaultAsync(x => x.Id == id && x.Activo == true);
 
             if (product == null)
             {
@@ -148,7 +150,8 @@ namespace AptekFarma.Controllers
                 return NotFound(new { message = "No se ha encontrado Producto" });
             }
 
-            _context.ProductVenta.Remove(product);
+            product.Activo = false;
+            _context.ProductVenta.Update(product);
             await _context.SaveChangesAsync();
             var products = await _context.ProductVenta.ToListAsync();
             return Ok(new { message = "Producto eliminado correctamente", products });
@@ -206,7 +209,8 @@ namespace AptekFarma.Controllers
                                     Nombre = nombre,
                                     PuntosNecesarios = puntosNecesarios,
                                     CantidadMax = cantidadMax,
-                                    Laboratorio = laboratorio
+                                    Laboratorio = laboratorio,
+                                    Activo = true
                                 });
                             }
                         }

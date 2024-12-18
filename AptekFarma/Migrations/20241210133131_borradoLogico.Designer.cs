@@ -3,6 +3,7 @@ using System;
 using AptekFarma.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AptekFarma.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241210133131_borradoLogico")]
+    partial class borradoLogico
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,14 +58,8 @@ namespace AptekFarma.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("PDF")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("Titulo")
                         .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Video")
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");
@@ -393,7 +390,7 @@ namespace AptekFarma.Migrations
                     b.Property<int>("FormularioID")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProductoCampannaID")
+                    b.Property<int>("PorductoCampannaID")
                         .HasColumnType("int");
 
                     b.Property<double>("TotalPuntos")
@@ -403,7 +400,7 @@ namespace AptekFarma.Migrations
 
                     b.HasIndex("FormularioID");
 
-                    b.HasIndex("ProductoCampannaID");
+                    b.HasIndex("PorductoCampannaID");
 
                     b.ToTable("venta_campanna");
                 });
@@ -609,7 +606,7 @@ namespace AptekFarma.Migrations
 
                     b.HasOne("AptekFarma.Models.ProductoCampanna", "ProductoCampanna")
                         .WithMany()
-                        .HasForeignKey("ProductoCampannaID")
+                        .HasForeignKey("PorductoCampannaID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
