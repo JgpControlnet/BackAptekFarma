@@ -145,7 +145,7 @@ namespace AptekFarma.Controllers
 
 
         [HttpPost("CreateCampanna")]
-        public async Task<IActionResult> CreateCampanna([FromForm]CrearCampannaDTO campannaDTO)
+        public async Task<IActionResult> CreateCampanna([FromForm] CrearCampannaDTO campannaDTO)
         {
 
             var campanna = new Campanna
@@ -204,6 +204,7 @@ namespace AptekFarma.Controllers
 
                 campanna.PDF = relativeImagePath;
                 _context.Campanna.Update(campanna);
+                await _context.SaveChangesAsync();
             }
 
             var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
@@ -214,7 +215,7 @@ namespace AptekFarma.Controllers
         }
 
         [HttpPut("UpdateCampanna")]
-        public async Task<IActionResult> UpdateCampanna([FromBody] UpdateCampannaDTO campannaDTO)
+        public async Task<IActionResult> UpdateCampanna([FromForm] UpdateCampannaDTO campannaDTO)
         {
             var campanna = await _context.Campanna
                 .FirstOrDefaultAsync(x => x.Id == campannaDTO.id);
@@ -282,6 +283,7 @@ namespace AptekFarma.Controllers
 
                 campanna.PDF = relativeImagePath;
                 _context.Campanna.Update(campanna);
+                await _context.SaveChangesAsync();
             }
 
             var campannas = await _context.Campanna
@@ -372,6 +374,35 @@ namespace AptekFarma.Controllers
 
             return Ok(campannaDTOs);
         }
+
+        [HttpGet("GetPdfByCampannaId")]
+        public async Task<IActionResult> GetPdfByCampannaId(int id)
+        {
+            var campanna = await _context.Campanna
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (campanna == null)
+            {
+                return NotFound(new { message = "No se ha encontrado la campaña" });
+            }
+
+            if (string.IsNullOrEmpty(campanna.PDF))
+            {
+                return NotFound(new { message = "No se ha encontrado el archivo PDF asociado a esta campaña" });
+            }
+
+            var pdfFilePath = Path.Combine(Directory.GetCurrentDirectory()+ "\\wwwroot\\", campanna.PDF);  
+
+            if (!System.IO.File.Exists(pdfFilePath))
+            {
+                return NotFound(new { message = "El archivo PDF no se encuentra en el servidor" });
+            }
+
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(pdfFilePath);
+
+            return File(fileBytes, "application/pdf", campanna.PDF);
+        }
+
 
 
 

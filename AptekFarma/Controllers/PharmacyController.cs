@@ -200,6 +200,7 @@ namespace AptekFarma.Controllers
                                 existingPharmacy.Localidad = localidad;
                                 existingPharmacy.Provincia = provincia;
                                 existingPharmacy.CP = cp;
+                                existingPharmacy.Activo = true;
                             }
                             else
                             {

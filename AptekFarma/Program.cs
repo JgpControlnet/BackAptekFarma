@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using Serilog;
+using static AptekFarma.Services.MiddlewareService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,7 +119,11 @@ app.UseSerilogRequestLogging();
 
 //app.UseHttpsRedirection();
 
+app.UseAuthentication();  // Asegúrate de que el middleware de autenticación esté antes
 app.UseAuthorization();
+
+// Aquí va tu middleware personalizado para restringir documentos
+app.UseMiddleware<RestrictDocumentsMiddleware>();
 app.UseStaticFiles(); // Habilitar archivos estáticos
 
 

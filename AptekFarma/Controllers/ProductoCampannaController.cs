@@ -223,6 +223,7 @@ namespace AptekFarma.Controllers
                                 existingProduct.Puntos = puntos;
                                 existingProduct.UnidadesMaximas = unidadesMaximas;
                                 existingProduct.Laboratorio = laboratorio;
+                                existingProduct.Activo = true;
                             }
                             else
                             {

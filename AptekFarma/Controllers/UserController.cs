@@ -74,7 +74,7 @@ namespace AptekFarma.Controllers
                 Pharmacy = _context.Pharmacy.FirstOrDefault(p => p.Id == dto.PharmacyId)
 
             };
-            
+
             await _userManager.CreateAsync(user, dto.Password);
             await _userManager.AddToRoleAsync(user, "Farma");
 
@@ -105,7 +105,7 @@ namespace AptekFarma.Controllers
                     user.RememberMe = model.RemembeMe;
                     _context.Update(user);
                     await _context.SaveChangesAsync();
-                    return Ok(new { Token, rol = rol[0], user.Id, nombre=user.nombre+" "+user.apellidos, user.Points });
+                    return Ok(new { Token, rol = rol[0], user.Id, nombre = user.nombre + " " + user.apellidos, user.Points });
 
                 }
 
@@ -181,7 +181,7 @@ namespace AptekFarma.Controllers
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllFarmaceuticos()
         {
             var users = _context.Users
-                .Include(u => u.Pharmacy) 
+                .Include(u => u.Pharmacy)
                 .AsQueryable();
 
             users = users.Where(u => u.PharmacyID != null);
@@ -204,7 +204,7 @@ namespace AptekFarma.Controllers
                 Apellidos = user.apellidos,
                 Nif = user.nif,
                 FechaNacimiento = user.fecha_nacimiento,
-                rol = _userManager.GetRolesAsync(user).Result.FirstOrDefault(), 
+                rol = _userManager.GetRolesAsync(user).Result.FirstOrDefault(),
                 PharmacyId = user.Pharmacy != null ? user.Pharmacy.Id : null,
                 Points = user.Points,
                 Pharmacy = user.Pharmacy != null ? new PharmacyDTO
@@ -216,7 +216,7 @@ namespace AptekFarma.Controllers
                     Localidad = user.Pharmacy.Localidad,
                     Provincia = user.Pharmacy.Provincia
                 } : null
-                
+
             };
         }
 
@@ -234,6 +234,7 @@ namespace AptekFarma.Controllers
             }
 
             var user = new UserDTO();
+            user.Id = usuario.Id;
             user.UserName = usuario.UserName;
             user.Email = usuario.Email;
             user.Nif = usuario.nif;
@@ -244,22 +245,51 @@ namespace AptekFarma.Controllers
             user.Points = usuario.Points;
             user.rol = _userManager.GetRolesAsync(usuario).Result.FirstOrDefault();
 
-            var ventas = await _context.VentaPuntos
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(p => p.Id == usuario.PharmacyID);
+
+            if (pharmacy != null)
+            {
+
+                var usuariosIds = await _context.Users
+                 .Where(u => u.PharmacyID == pharmacy.Id)
+                 .Select(u => u.Id)
+                 .ToListAsync();
+
+                var totalUnidadesVendidas = await _context.VentaCampanna
+                    .Include(vc => vc.FormularioVenta)
+                    .Where(vc => usuariosIds.Contains(vc.FormularioVenta.UserID) &&
+                                 vc.FormularioVenta.EstadoFormularioID == 2)
+                    .SumAsync(vc => (double?)vc.Cantidad);
+
+                user.Pharmacy = new PharmacyDTO
+                {
+                    id = pharmacy.Id,
+                    Nombre = pharmacy.Nombre,
+                    Direccion = pharmacy.Direccion,
+                    CP = pharmacy.CP,
+                    Localidad = pharmacy.Localidad,
+                    Provincia = pharmacy.Provincia,
+                    TotalUnidadesVendidas = totalUnidadesVendidas
+                };
+            }
+
+
+            var compras = await _context.VentaPuntos
                 .Include(v => v.User)
                 .Include(v => v.Product)
-                .Where(v => v.UserID == user.Id)
+                .Where(v => v.UserID == usuario.Id)
                 .OrderByDescending(v => v.FechaCompra)
                 .ToListAsync();
 
-            var ventasDTO = new object();
+            var comprasDTO = new object();
 
-            if (ventas == null || !ventas.Any())
+            if (compras == null || !compras.Any())
             {
-                ventasDTO = null;
+                comprasDTO = null;
             }
             else
             {
-                ventasDTO = ventas.Select(v => new
+                comprasDTO = compras.Select(v => new
                 {
                     v.Id,
                     v.UserID,
@@ -272,17 +302,61 @@ namespace AptekFarma.Controllers
                 });
             }
 
+            var formulariosVentas = await _context.FormularioVenta.Include(fv => fv.EstadoFormulario).Include(fv=> fv.Campanna)
+                .Where(fv => fv.UserID == usuario.Id)
+                .ToListAsync();
+
+            var formulariosVentasDTO = new List<object>();
+
+            foreach (var formulario in formulariosVentas)
+            {
+                var ventas = await _context.VentaCampanna
+                    .Where(vc => vc.FormularioID == formulario.Id) 
+                    .Include(vc => vc.ProductoCampanna) 
+                    .ThenInclude(pc => pc.Campanna) 
+                    .ToListAsync();
+
+                formulariosVentasDTO.Add(new
+                {
+                    formulario.Id,
+                    formulario.UserID,
+                    formulario.FechaCreacion,
+                    formulario.EstadoFormularioID,
+                    formulario.EstadoFormulario,
+                    formulario.TotalPuntos,
+                    formulario.Campanna,
+                    VentaCampanna = ventas.Select(vc => new
+                    {
+                        vc.Id,
+                        vc.Cantidad,
+                        vc.TotalPuntos,
+                        ProductoCampanna = new
+                        {
+                            vc.ProductoCampanna.Id,
+                            vc.ProductoCampanna.Nombre,
+                            CampannaId = vc.ProductoCampanna.Campanna.Id,
+                            CampannaNombre = vc.ProductoCampanna.Campanna.Nombre,
+                            vc.ProductoCampanna.Puntos,
+                            vc.ProductoCampanna.UnidadesMaximas,
+                            vc.ProductoCampanna.Laboratorio
+                        }
+                    }).ToList()
+                });
+            }
+
             var response = new
             {
                 User = user,
-                Ventas = ventasDTO
+                formularioventas = formulariosVentasDTO,
+                Compras = comprasDTO ?? new List<Object>(),
+
             };
 
             return Ok(response);
         }
 
-       
-       
+
+
 
         // PUT: api/Usuarios/5
         [HttpPut("ModificarUsuario")]
@@ -326,9 +400,9 @@ namespace AptekFarma.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                
+
                 return NotFound(new { message = "Error al actualizar el usuario" });
-                
+
             }
 
             return Ok(new { message = "Usuario actualizado correctamente" });
