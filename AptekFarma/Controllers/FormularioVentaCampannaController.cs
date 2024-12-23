@@ -34,6 +34,8 @@ namespace AptekFarma.Controllers
             [FromQuery] string? userID,
             [FromQuery] int? EstadoFormularioID)
         {
+
+           
             var query = _context.FormularioVenta
                 .Include(f => f.User)
                 .ThenInclude(u => u.Pharmacy)
@@ -76,6 +78,7 @@ namespace AptekFarma.Controllers
                 fechaCreacion = f.FechaCreacion
             });
 
+            formulariosDTO = formulariosDTO.OrderByDescending(f => f.fechaCreacion);
             return Ok(formulariosDTO);
         }
         [HttpGet("GetFormulario")]
@@ -112,7 +115,6 @@ namespace AptekFarma.Controllers
                 totalPuntos = formulario.TotalPuntos,
                 farmacia = formulario.User.Pharmacy
             };
-
             return Ok(formularioDTO);
         }
 
@@ -203,7 +205,7 @@ namespace AptekFarma.Controllers
                 return NotFound("Formulario no encontrado.");
             }
 
-            if (formulario.EstadoFormularioID == 2)
+            if (formulario.EstadoFormularioID == 2 && requestValidar.idEstado==2)
             {
                 return BadRequest("El formulario ya ha sido validado.");
             }
@@ -224,8 +226,8 @@ namespace AptekFarma.Controllers
                     campannaID = formulario.CampannaID,
                     campanna = formulario.Campanna,
                     ventaCampannas = _context.VentaCampanna
-                     .Include(vc => vc.ProductoCampanna)
-                     .ToList(),
+                         .Include(vc => vc.ProductoCampanna)
+                         .ToList(),
                     totalPuntos = formulario.TotalPuntos,
                     fechaCreacion = formulario.FechaCreacion
                 };
@@ -258,7 +260,7 @@ namespace AptekFarma.Controllers
                 _context.Entry(producto).State = EntityState.Modified;
 
                 venta.Cantidad = cantidadCanjeada;
-                //venta.TotalPuntos = cantidadCanjeada * producto.Puntos;
+                venta.TotalPuntos = cantidadCanjeada * producto.Puntos;
                 await UpdateVentaCampanna(venta);
             }
 

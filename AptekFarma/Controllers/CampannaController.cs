@@ -28,8 +28,7 @@ namespace AptekFarma.Controllers
         public async Task<IActionResult> GetAllCampannas()
         {
             return Ok(await _context.Campanna.Include(c => c.EstadoCampanna)
-                .Where(c => c.Activo == true)
-                .ToListAsync());
+                .Where(c => c.Activo == true).OrderByDescending(c => c.FechaInicio).ToListAsync());
         }
 
         [HttpGet("GetCampannaById")]
@@ -39,7 +38,7 @@ namespace AptekFarma.Controllers
             var productos = new List<ProductoCampanna>();
             if (campanna != null)
             {
-                productos = await _context.ProductoCampanna.Where(x => x.CampannaId == campanna.Id).ToListAsync();
+                productos = await _context.ProductoCampanna.Where(x => x.CampannaId == campanna.Id && x.Activo == true).OrderByDescending(x=> x.Id).ToListAsync();
             }
 
             if (campanna == null)
@@ -65,7 +64,7 @@ namespace AptekFarma.Controllers
             }
 
             var productos = await _context.ProductoCampanna
-                .Where(x => x.CampannaId == campanna.Id)
+                .Where(x => x.CampannaId == campanna.Id && x.Activo == true).OrderByDescending(x => x.Id)
                 .ToListAsync();
 
             var formularios = await _context.FormularioVenta
@@ -339,7 +338,6 @@ namespace AptekFarma.Controllers
 
             foreach (var campanna in campannas)
             {
-                // Filtrar formularios por CampannaID y UserID
                 var formularios = await _context.FormularioVenta
                     .Where(f => f.CampannaID == campanna.Id && f.UserID == userID)
                     .ToListAsync();
@@ -364,6 +362,8 @@ namespace AptekFarma.Controllers
                     fechaFin = campanna.FechaFin,
                     fechaValido = campanna.FechaValido,
                     estadoCampanna = campanna.EstadoCampanna,
+                    PDF = campanna.PDF,
+                    Video = campanna.Video,
                     informesPendientes = formulariosNoValidados.Count,
                     informesConfirmados = formulariosValidados.Count,
                     puntosObtenidos = formulariosValidados.Sum(f => f.TotalPuntos)
@@ -372,6 +372,7 @@ namespace AptekFarma.Controllers
                 campannaDTOs.Add(campannaDTO);
             }
 
+            campannaDTOs = campannaDTOs.OrderByDescending(c => c.fechaInicio).ToList();
             return Ok(campannaDTOs);
         }
 
@@ -391,7 +392,7 @@ namespace AptekFarma.Controllers
                 return NotFound(new { message = "No se ha encontrado el archivo PDF asociado a esta campaña" });
             }
 
-            var pdfFilePath = Path.Combine(Directory.GetCurrentDirectory()+ "\\wwwroot\\", campanna.PDF);  
+            var pdfFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", campanna.PDF);
 
             if (!System.IO.File.Exists(pdfFilePath))
             {
@@ -402,9 +403,5 @@ namespace AptekFarma.Controllers
 
             return File(fileBytes, "application/pdf", campanna.PDF);
         }
-
-
-
-
     }
 }

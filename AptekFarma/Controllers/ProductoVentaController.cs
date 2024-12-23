@@ -1,9 +1,7 @@
 ﻿using AptekFarma.Models;
 using AptekFarma.DTO;
 using AptekFarma.Context;
-
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +43,10 @@ namespace AptekFarma.Controllers
                 .ToListAsync();
 
             if (filtro.Todas)
+            {
+                products = products.OrderByDescending(x => x.Id).ToList();
                 return Ok(products);
+            }
 
             if (filtro != null)
             {
@@ -65,11 +66,12 @@ namespace AptekFarma.Controllers
             }
 
             int totalItems = products.Count;
+            products = products.Where(x => x.Activo == true).OrderByDescending(x => x.Id).ToList();
             var paginatedProducts = products
                 .Skip((filtro.PageNumber - 1) * filtro.PageSize)
                 .Take(filtro.PageSize)
                 .ToList();
-
+            
             return Ok(paginatedProducts);
         }
 
@@ -102,7 +104,7 @@ namespace AptekFarma.Controllers
 
             await _context.ProductVenta.AddAsync(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductVenta.Where(p=> p.Activo==true).OrderByDescending(p=> p.Id).ToListAsync();
             return Ok(new { message = "Producto creado correctamente", products });
         }
 
@@ -127,7 +129,7 @@ namespace AptekFarma.Controllers
 
             _context.ProductVenta.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductVenta.Where(p => p.Activo == true).OrderByDescending(p => p.Id).ToListAsync();
             return Ok(new { message = "Producto modificado correctamente", products });
         }
 
@@ -144,7 +146,7 @@ namespace AptekFarma.Controllers
             product.Activo = false;
             _context.ProductVenta.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductVenta.Where(p => p.Activo == true).OrderByDescending(p => p.Id).ToListAsync();
             return Ok(new { message = "Producto eliminado correctamente", products });
         }
 
@@ -216,7 +218,7 @@ namespace AptekFarma.Controllers
                 await _context.SaveChangesAsync();
 
                 // Obtener todos los productos después de la operación
-                var allProducts = await _context.ProductVenta.ToListAsync();
+                var allProducts = await _context.ProductVenta.Where(p => p.Activo == true).OrderByDescending(p => p.Id).ToListAsync();
 
                 return Ok(new { message = "Productos importados exitosamente.", products = allProducts });
             }
