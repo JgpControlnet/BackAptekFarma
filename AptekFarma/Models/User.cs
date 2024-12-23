@@ -15,6 +15,7 @@ namespace AptekFarma.Models
         [ForeignKey("PharmacyID")]
         public Pharmacy? Pharmacy { get; set; }
         public double Points { get; set; }
+        public DateTime fechaCreacion { get; set; }
         public bool RememberMe { get; set; }
     }
 }

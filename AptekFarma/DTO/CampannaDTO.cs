@@ -17,6 +17,8 @@ namespace AptekFarma.DTO
         public int? informesConfirmados { get; set; }
         public int? informesPendientes { get; set; }
         public double? puntosObtenidos { get; set; }
+        public string? PDF { get; set; }
+        public string? Video { get; set; }
 
     }
 }

@@ -1,25 +1,11 @@
 ﻿using AptekFarma.Models;
 using AptekFarma.DTO;
 using AptekFarma.Context;
-
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
-using System.Configuration;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using AptekFarma.Models;
 using OfficeOpenXml;
-using AptekFarma.Controllers;
-using Humanizer;
-
 
 namespace AptekFarma.Controllers
 {
@@ -59,11 +45,15 @@ namespace AptekFarma.Controllers
                     Product = product,
                     TotalSold = _context.VentaCampanna
                         .Where(vc => vc.ProductoCampannaID == product.Id)
-                        .Sum(vc => (int?)vc.Cantidad) ?? 0 // Manejar nulos con ?? 0
+                        .Sum(vc => (int?)vc.Cantidad) ?? 0
                 });
 
             if (filtro.Todas)
-                return Ok(await query.ToListAsync());
+            {
+                var products = await query.ToListAsync();
+                products = products.OrderByDescending(x => x.Product.Id).ToList();
+                return Ok(products);
+            }
 
             if (filtro != null)
             {
@@ -88,15 +78,16 @@ namespace AptekFarma.Controllers
                 query = query.Where(x => x.Product.Activo == true);
             }
 
+
+            var productsFilter = await query.ToListAsync();
+            productsFilter = productsFilter.OrderByDescending(x => x.Product.Id).ToList();
             // Paginación
-            var paginatedProducts = await query
+            var paginatedProducts = productsFilter
                 .Skip((filtro.PageNumber - 1) * filtro.PageSize)
-                .Take(filtro.PageSize)
-                .ToListAsync();
+                .Take(filtro.PageSize);
 
             return Ok(new
             {
-
                 Products = paginatedProducts
             });
         }
@@ -105,7 +96,7 @@ namespace AptekFarma.Controllers
         [HttpGet("GetProductById")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _context.ProductoCampanna.Include(x => x.Campanna).FirstOrDefaultAsync(x => x.Id == id && x.Activo == true);
+            var product = await _context.ProductoCampanna.Include(x => x.Campanna).OrderByDescending(x=> x.Id).FirstOrDefaultAsync(x => x.Id == id && x.Activo == true);
 
             if (product == null)
             {
@@ -131,8 +122,8 @@ namespace AptekFarma.Controllers
 
             await _context.ProductoCampanna.AddAsync(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId).ToListAsync();
-            
+            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId && x.Activo == true).OrderByDescending(x => x.Id).ToListAsync();
+
             return Ok(new { message = "Producto creado correctamente", products });
         }
 
@@ -159,8 +150,8 @@ namespace AptekFarma.Controllers
 
             _context.ProductoCampanna.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId).ToListAsync();
-           
+            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId && x.Activo == true).OrderByDescending(x => x.Id).ToListAsync();
+
             return Ok(new { message = "Producto modificado correctamente", products });
         }
 
@@ -177,8 +168,8 @@ namespace AptekFarma.Controllers
             product.Activo = false;
             _context.ProductoCampanna.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId).ToListAsync();
-            
+            var products = await _context.ProductoCampanna.Where(x => x.CampannaId == product.CampannaId && x.Activo == true).OrderByDescending(x=> x.Id).ToListAsync();
+
             return Ok(new { message = "Producto eliminado correctamente", products });
         }
 
@@ -223,6 +214,7 @@ namespace AptekFarma.Controllers
                                 existingProduct.Puntos = puntos;
                                 existingProduct.UnidadesMaximas = unidadesMaximas;
                                 existingProduct.Laboratorio = laboratorio;
+                                existingProduct.Activo = true;
                             }
                             else
                             {
@@ -250,7 +242,7 @@ namespace AptekFarma.Controllers
                 }
                 await _context.SaveChangesAsync();
 
-                var productsCampanna = await _context.ProductoCampanna.Where(x => x.CampannaId == idCampanna).ToListAsync();
+                var productsCampanna = await _context.ProductoCampanna.Where(x => x.CampannaId == idCampanna && x.Activo == true).OrderByDescending(x => x.Id).ToListAsync();
                 return Ok(new { message = "Productos campaña importados exitosamente.", products = productsCampanna });
             }
             catch (Exception ex)

@@ -1,24 +1,11 @@
 ﻿using AptekFarma.Models;
 using AptekFarma.DTO;
 using AptekFarma.Context;
-
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
-using System.Configuration;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using AptekFarma.Models;
 using OfficeOpenXml;
-using AptekFarma.Controllers;
-using System.Diagnostics;
 
 
 namespace AptekFarma.Controllers
@@ -49,39 +36,45 @@ namespace AptekFarma.Controllers
         }
 
         [HttpPost("GetAllProducts")]
-        public async Task<IActionResult> GetProducts([FromBody] ProductFilterDTO filtro)
+        public async Task<IActionResult> GetProducts([FromBody] ProductVentaFilterDTO filtro)
         {
             var products = await _context.ProductVenta
                 .Where(x => x.Activo == true)
                 .ToListAsync();
 
             if (filtro.Todas)
+            {
+                products = products.OrderByDescending(x => x.Id).ToList();
                 return Ok(products);
+            }
 
             if (filtro != null)
             {
-
-
                 if (!string.IsNullOrEmpty(filtro.nombre))
                 {
                     products = products.Where(x => x.Nombre.ToLower().Contains(filtro.nombre.ToLower())).ToList();
                 }
-
-                if (filtro.puntosNecesarios > 0)
+                if (filtro.puntosDesde.HasValue)
                 {
-                    products = products.Where(x => x.PuntosNecesarios == filtro.puntosNecesarios).ToList();
+                    products = products.Where(x => x.PuntosNecesarios >= filtro.puntosDesde.Value).ToList();
+                }
+
+                if (filtro.puntosHasta.HasValue)
+                {
+                    products = products.Where(x => x.PuntosNecesarios <= filtro.puntosHasta.Value).ToList();
                 }
             }
 
-            // Paginación
             int totalItems = products.Count;
+            products = products.Where(x => x.Activo == true).OrderByDescending(x => x.Id).ToList();
             var paginatedProducts = products
                 .Skip((filtro.PageNumber - 1) * filtro.PageSize)
                 .Take(filtro.PageSize)
                 .ToList();
-
+            
             return Ok(paginatedProducts);
         }
+
 
         [HttpGet("GetProductById")]
         public async Task<IActionResult> GetProductById(int id)
@@ -111,7 +104,7 @@ namespace AptekFarma.Controllers
 
             await _context.ProductVenta.AddAsync(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductVenta.Where(p=> p.Activo==true).OrderByDescending(p=> p.Id).ToListAsync();
             return Ok(new { message = "Producto creado correctamente", products });
         }
 
@@ -136,7 +129,7 @@ namespace AptekFarma.Controllers
 
             _context.ProductVenta.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductVenta.Where(p => p.Activo == true).OrderByDescending(p => p.Id).ToListAsync();
             return Ok(new { message = "Producto modificado correctamente", products });
         }
 
@@ -153,7 +146,7 @@ namespace AptekFarma.Controllers
             product.Activo = false;
             _context.ProductVenta.Update(product);
             await _context.SaveChangesAsync();
-            var products = await _context.ProductVenta.ToListAsync();
+            var products = await _context.ProductVenta.Where(p => p.Activo == true).OrderByDescending(p => p.Id).ToListAsync();
             return Ok(new { message = "Producto eliminado correctamente", products });
         }
 
@@ -199,6 +192,7 @@ namespace AptekFarma.Controllers
                                 existingProduct.PuntosNecesarios = puntosNecesarios;
                                 existingProduct.CantidadMax = cantidadMax;
                                 existingProduct.Laboratorio = laboratorio;
+                                existingProduct.Activo = true;
                             }
                             else
                             {
@@ -217,7 +211,6 @@ namespace AptekFarma.Controllers
                     }
                 }
                 products = products.Where(x => x.CodProducto != 0).ToList();
-                // Guardar los nuevos productos en la base de datos
                 if (products.Count > 0)
                 {
                     _context.ProductVenta.AddRange(products);
@@ -225,7 +218,7 @@ namespace AptekFarma.Controllers
                 await _context.SaveChangesAsync();
 
                 // Obtener todos los productos después de la operación
-                var allProducts = await _context.ProductVenta.ToListAsync();
+                var allProducts = await _context.ProductVenta.Where(p => p.Activo == true).OrderByDescending(p => p.Id).ToListAsync();
 
                 return Ok(new { message = "Productos importados exitosamente.", products = allProducts });
             }
