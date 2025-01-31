@@ -12,7 +12,8 @@ namespace AptekFarma.DTO
         public DateTime fechaInicio { get; set; }
         public DateTime fechaFin { get; set; }
         public DateTime fechaValido { get; set; }
-        public int? estadoCampanna { get; set; }
+        public IFormFile? pdf { get; set; }
+        public string? video { get; set; }
         
 
     }

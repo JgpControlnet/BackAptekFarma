@@ -71,10 +71,10 @@ namespace AptekFarma.Controllers
                 fecha_nacimiento = dto.FechaNacimiento.ToString(),
                 Email = dto.Email,
                 PhoneNumber = dto.PhoneNumber,
-                Pharmacy = _context.Pharmacy.FirstOrDefault(p => p.Id == dto.PharmacyId)
-
+                Pharmacy = _context.Pharmacy.FirstOrDefault(p => p.Id == dto.PharmacyId),
+                fechaCreacion = DateTime.Now
             };
-            
+
             await _userManager.CreateAsync(user, dto.Password);
             await _userManager.AddToRoleAsync(user, "Farma");
 
@@ -105,7 +105,7 @@ namespace AptekFarma.Controllers
                     user.RememberMe = model.RemembeMe;
                     _context.Update(user);
                     await _context.SaveChangesAsync();
-                    return Ok(new { Token, rol = rol[0], user.Id, nombre=user.nombre+" "+user.apellidos, user.Points });
+                    return Ok(new { Token, rol = rol[0], user.Id, nombre = user.nombre + " " + user.apellidos, user.Points });
 
                 }
 
@@ -120,7 +120,7 @@ namespace AptekFarma.Controllers
         public async Task<ActionResult<IEnumerable<User>>> GetAllUsuarios([FromQuery] UserFilterDTO filter)
         {
             var usersQuery = _context.Users
-                .Include(u => u.Pharmacy)
+                .Include(u => u.Pharmacy).OrderByDescending(u => u.fechaCreacion)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(filter.UserName))
@@ -170,7 +170,7 @@ namespace AptekFarma.Controllers
                 usersQuery = usersQuery.Where(u => u.Pharmacy != null && u.Pharmacy.Id == filter.PharmacyId);
             }
 
-            var usersListFiltered = await usersQuery.ToListAsync();
+            var usersListFiltered = await usersQuery.OrderByDescending(u => u.fechaCreacion).ToListAsync();
             var usersDTO = usersListFiltered.Select(u => MapToDTO(u)).ToList();
 
             return Ok(usersDTO);
@@ -181,7 +181,7 @@ namespace AptekFarma.Controllers
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllFarmaceuticos()
         {
             var users = _context.Users
-                .Include(u => u.Pharmacy) 
+                .Include(u => u.Pharmacy)
                 .AsQueryable();
 
             users = users.Where(u => u.PharmacyID != null);
@@ -204,7 +204,7 @@ namespace AptekFarma.Controllers
                 Apellidos = user.apellidos,
                 Nif = user.nif,
                 FechaNacimiento = user.fecha_nacimiento,
-                rol = _userManager.GetRolesAsync(user).Result.FirstOrDefault(), 
+                rol = _userManager.GetRolesAsync(user).Result.FirstOrDefault(),
                 PharmacyId = user.Pharmacy != null ? user.Pharmacy.Id : null,
                 Points = user.Points,
                 Pharmacy = user.Pharmacy != null ? new PharmacyDTO
@@ -216,12 +216,11 @@ namespace AptekFarma.Controllers
                     Localidad = user.Pharmacy.Localidad,
                     Provincia = user.Pharmacy.Provincia
                 } : null
-                
+
             };
         }
 
 
-        // GET: api/Usuarios/string
         [HttpGet("Usuario")]
         [Authorize]
         public async Task<ActionResult<UserDTO>> GetUsuario(string id)
@@ -234,6 +233,7 @@ namespace AptekFarma.Controllers
             }
 
             var user = new UserDTO();
+            user.Id = usuario.Id;
             user.UserName = usuario.UserName;
             user.Email = usuario.Email;
             user.Nif = usuario.nif;
@@ -244,13 +244,113 @@ namespace AptekFarma.Controllers
             user.Points = usuario.Points;
             user.rol = _userManager.GetRolesAsync(usuario).Result.FirstOrDefault();
 
-            return Ok(user);
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(p => p.Id == usuario.PharmacyID);
+
+            if (pharmacy != null)
+            {
+
+                var usuariosIds = await _context.Users
+                 .Where(u => u.PharmacyID == pharmacy.Id)
+                 .Select(u => u.Id)
+                 .ToListAsync();
+
+                var totalUnidadesVendidas = await _context.VentaCampanna
+                    .Include(vc => vc.FormularioVenta)
+                    .Where(vc => usuariosIds.Contains(vc.FormularioVenta.UserID) &&
+                                 vc.FormularioVenta.EstadoFormularioID == 2)
+                    .SumAsync(vc => (double?)vc.Cantidad);
+
+                user.Pharmacy = new PharmacyDTO
+                {
+                    id = pharmacy.Id,
+                    Nombre = pharmacy.Nombre,
+                    Direccion = pharmacy.Direccion,
+                    CP = pharmacy.CP,
+                    Localidad = pharmacy.Localidad,
+                    Provincia = pharmacy.Provincia,
+                    TotalUnidadesVendidas = totalUnidadesVendidas
+                };
+            }
+
+
+            var compras = await _context.VentaPuntos
+                .Include(v => v.User)
+                .Include(v => v.Product)
+                .Where(v => v.UserID == usuario.Id)
+                .OrderByDescending(v => v.FechaCompra)
+                .ToListAsync();
+
+            var comprasDTO = new List<VentaPuntosDTO>(); 
+
+            if (compras == null || !compras.Any())
+            {
+                comprasDTO = null;
+            }
+            else
+            {
+                comprasDTO = compras.Select(v => new VentaPuntosDTO
+                {
+                    Id = v.Id,
+                    UserID = v.UserID,
+                    ProductID = v.ProductID,
+                    Product = v.Product == null ? null : new ProductoVentaDTO
+                    {
+                        Id = v.Product.Id,
+                        nombre = v.Product.Nombre,
+                        codProducto = v.Product.CodProducto,
+                        imagen = v.Product.Imagen,
+                        descripcion = v.Product.Descripcion,
+                        puntosNecesarios = v.Product.PuntosNecesarios,
+                        cantidadMax = v.Product.CantidadMax,
+                        laboratorio = v.Product.Laboratorio
+                    },
+                    PuntosTotales = v.PuntosTotales,
+                    FechaCompra = v.FechaCompra,
+                    Cantidad = v.Cantidad
+                }).ToList();
+            }
+
+            var formulariosVentas = await _context.FormularioVenta.Include(fv => fv.EstadoFormulario).Include(fv=> fv.Campanna)
+                .Where(fv => fv.UserID == usuario.Id)
+                .ToListAsync();
+
+            var formulariosVentasDTO = new List<FormularioVentaDTO>();
+
+            foreach (var formulario in formulariosVentas)
+            {
+                var ventas = await _context.VentaCampanna
+                    .Where(vc => vc.FormularioID == formulario.Id) 
+                    .Include(vc => vc.ProductoCampanna) 
+                    .ThenInclude(pc => pc.Campanna) 
+                    .ToListAsync();
+
+                formulariosVentasDTO.Add(new FormularioVentaDTO
+                {
+                    id = formulario.Id,
+                    userID = formulario.UserID,
+                    fechaCreacion = formulario.FechaCreacion,
+                    estadoFormularioID = formulario.EstadoFormularioID,
+                    estadoFormulario = formulario.EstadoFormulario,
+                    campannaID = formulario.CampannaID,
+                    campanna = formulario.Campanna,
+                    totalPuntos = formulario.TotalPuntos,
+                    farmacia = formulario.User.Pharmacy,
+                    ventaCampannas = ventas
+                });
+            }
+
+            formulariosVentasDTO = formulariosVentasDTO.OrderByDescending(fv => fv.fechaCreacion).ToList();
+            var response = new
+            {
+                User = user,
+                formularioventas = formulariosVentasDTO,
+                Compras = comprasDTO ?? new List<VentaPuntosDTO>(),
+
+            };
+
+            return Ok(response);
         }
 
-       
-       
-
-        // PUT: api/Usuarios/5
         [HttpPut("ModificarUsuario")]
         [Authorize]
         public async Task<IActionResult> PutUsuario(string userId, [FromBody] UserDTO dto)
@@ -292,15 +392,14 @@ namespace AptekFarma.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                
+
                 return NotFound(new { message = "Error al actualizar el usuario" });
-                
+
             }
 
             return Ok(new { message = "Usuario actualizado correctamente" });
         }
 
-        // DELETE: api/Usuarios/5
         [HttpDelete("EliminarUsuario")]
         [Authorize]
         public async Task<IActionResult> DeleteUsuario(string id)
@@ -338,7 +437,6 @@ namespace AptekFarma.Controllers
         {
             return _context.Users.Any(e => e.Id == id);
         }
-
 
         private async Task<string> GenerateJwtToken(IdentityUser user)
         {
@@ -448,7 +546,7 @@ namespace AptekFarma.Controllers
 
         private async Task<AuthResult> GenerateJwtAndRefreshToken(IdentityUser user)
         {
-            var jwtToken = GenerateJwtToken(user);  // El método que ya tienes para generar el JWT token
+            var jwtToken = GenerateJwtToken(user);  
 
             // Generar Refresh Token
             var refreshToken = GenerateRefreshToken();
@@ -460,7 +558,8 @@ namespace AptekFarma.Controllers
             {
                 Token = await jwtToken,
                 RefreshToken = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddHours(24) // Caducidad corta para el JWT Token
+                ExpiresAt = DateTime.UtcNow.AddHours(2) // Caducidad corta para el JWT Token
+               // ExpiresAt = DateTime.UtcNow.AddMinutes(1) // Caducidad corta para el JWT Token
             };
         }
 
@@ -480,7 +579,8 @@ namespace AptekFarma.Controllers
             {
                 Token = refreshToken,
                 UserId = user.Id,
-                ExpiresAt = DateTime.UtcNow.AddDays(7)  // Caducidad del Refresh Token
+                //ExpiresAt = DateTime.UtcNow.AddDays(7)  // Caducidad del Refresh Token
+                ExpiresAt = DateTime.UtcNow.AddHours(24) // Caducidad del Refresh Token
             };
 
             // Guardar en base de datos
@@ -580,19 +680,4 @@ namespace AptekFarma.Controllers
         public string RefreshToken { get; set; }
     }
 
-    public class UserGoogle
-    {
-        public string uid { get; set; }
-        public string email { get; set; }
-        public string displayName { get; set; }
-        public string? photoUrl { get; set; }
-        public string? phoneNumber { get; set; }
-        public bool isAnonymous { get; set; }
-        public bool isEmailVerified { get; set; }
-        public string? providerId { get; set; }
-        public string? tenantId { get; set; }
-        public string? refreshToken { get; set; }
-        public long creationTimestamp { get; set; }
-        public long lastSignInTimestamp { get; set; }
-    }
 }

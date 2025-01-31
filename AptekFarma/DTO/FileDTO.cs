@@ -1,4 +1,4 @@
-﻿namespace AptekFarma.Controllers
+﻿namespace AptekFarma.DTO
 {
     public class FileDTO
     {

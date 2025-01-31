@@ -7,6 +7,7 @@ using AptekFarma.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.DotNet.Scaffolding.Shared.Messaging;
 using AptekFarma.Migrations;
+using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 
 namespace AptekFarma.Controllers
@@ -33,6 +34,8 @@ namespace AptekFarma.Controllers
             [FromQuery] string? userID,
             [FromQuery] int? EstadoFormularioID)
         {
+
+           
             var query = _context.FormularioVenta
                 .Include(f => f.User)
                 .ThenInclude(u => u.Pharmacy)
@@ -61,12 +64,7 @@ namespace AptekFarma.Controllers
             {
                 id = f.Id,
                 userID = f.UserID,
-                user = new UserDTO
-                {
-                    Id = f.User.Id,
-                    Nombre = f.User.nombre,
-                    Points = f.User.Points
-                },
+                user = f.User,
                 estadoFormularioID = f.EstadoFormularioID,
                 estadoFormulario = f.EstadoFormulario,
                 campannaID = f.CampannaID,
@@ -76,9 +74,11 @@ namespace AptekFarma.Controllers
                     .Where(vc => vc.FormularioID == f.Id)
                     .ToList(),
                 totalPuntos = f.TotalPuntos,
-                farmacia = f.User.Pharmacy
+                farmacia = f.User.Pharmacy,
+                fechaCreacion = f.FechaCreacion
             });
 
+            formulariosDTO = formulariosDTO.OrderByDescending(f => f.fechaCreacion);
             return Ok(formulariosDTO);
         }
         [HttpGet("GetFormulario")]
@@ -105,19 +105,7 @@ namespace AptekFarma.Controllers
             {
                 id = formulario.Id,
                 userID = formulario.UserID,
-                user = new UserDTO
-                {
-                    Id = formulario.User.Id,
-                    Nombre = formulario.User.nombre,
-                    Points = formulario.User.Points,
-                    Pharmacy = formulario.User.Pharmacy != null
-                        ? new PharmacyDTO
-                        {
-                            id = formulario.User.Pharmacy.Id,
-                            Nombre = formulario.User.Pharmacy.Nombre
-                        }
-                        : null
-                },
+                user = formulario.User,
                 estadoFormularioID = formulario.EstadoFormularioID,
                 estadoFormulario = formulario.EstadoFormulario,
                 campannaID = formulario.CampannaID,
@@ -125,9 +113,8 @@ namespace AptekFarma.Controllers
                 ventaCampannas = ventaCampannas,
                 fechaCreacion = formulario.FechaCreacion,
                 totalPuntos = formulario.TotalPuntos,
-                farmacia = formulario.User.Pharmacy 
+                farmacia = formulario.User.Pharmacy
             };
-
             return Ok(formularioDTO);
         }
 
@@ -163,12 +150,19 @@ namespace AptekFarma.Controllers
                     return NotFound($"Producto con ID {producto.ProductoCampannaID} no encontrado.");
                 }
 
-                var puntosProducto = producto.Cantidad * productoCampanna.Puntos;
+                int cantidadCanjeada = Math.Min(producto.Cantidad, productoCampanna.UnidadesMaximas);
+                if (cantidadCanjeada == 0)
+                {
+                    continue;
+                }
+
+
+                var puntosProducto = cantidadCanjeada * productoCampanna.Puntos;
                 totalPuntos += puntosProducto;
 
                 ventas.Add(new VentaCampanna
                 {
-                    PorductoCampannaID = producto.ProductoCampannaID,
+                    ProductoCampannaID = producto.ProductoCampannaID,
                     Cantidad = producto.Cantidad,
                     TotalPuntos = puntosProducto
                 });
@@ -211,11 +205,36 @@ namespace AptekFarma.Controllers
                 return NotFound("Formulario no encontrado.");
             }
 
-            if (formulario.EstadoFormularioID == 2)
+            if (formulario.EstadoFormularioID == 2 && requestValidar.idEstado==2)
             {
                 return BadRequest("El formulario ya ha sido validado.");
             }
+            var formularioDTO = new FormularioVentaDTO();
+            if (requestValidar.idEstado == 3)
+            {
+                formulario.EstadoFormularioID = 3;
+                formulario.EstadoFormulario = await _context.EstadoFormulario.FindAsync(3);
+                _context.Update(formulario);
+                await _context.SaveChangesAsync();
+                formularioDTO = new FormularioVentaDTO
+                {
+                    id = formulario.Id,
+                    userID = formulario.UserID,
+                    user = formulario.User,
+                    estadoFormularioID = formulario.EstadoFormularioID,
+                    estadoFormulario = formulario.EstadoFormulario,
+                    campannaID = formulario.CampannaID,
+                    campanna = formulario.Campanna,
+                    ventaCampannas = _context.VentaCampanna
+                         .Include(vc => vc.ProductoCampanna)
+                         .ToList(),
+                    totalPuntos = formulario.TotalPuntos,
+                    fechaCreacion = formulario.FechaCreacion
+                };
+                return Ok(new { Message = "Formulario de venta anulado.", TotalPuntos = 0, formulario = formularioDTO });
+            }
 
+            //si el estado del formulario es 2 ==>
             double totalPuntosFormulario = 0;
 
             foreach (var venta in requestValidar.ventaCampannas)
@@ -232,9 +251,11 @@ namespace AptekFarma.Controllers
                     continue;
                 }
 
-                totalPuntosFormulario += cantidadCanjeada * producto.Puntos;
+                totalPuntosFormulario += cantidadCanjeada *
+                    producto.Puntos;    //adml
+                   // venta.TotalPuntos; //rafa
 
-           
+
                 producto.UnidadesMaximas -= cantidadCanjeada;
                 _context.Entry(producto).State = EntityState.Modified;
 
@@ -248,10 +269,29 @@ namespace AptekFarma.Controllers
             formulario.EstadoFormulario = await _context.EstadoFormulario.FindAsync(2);
             formulario.TotalPuntos = totalPuntosFormulario;
 
+
+
+
             _context.Update(formulario);
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Formulario de venta validado con éxito.", TotalPuntos = totalPuntosFormulario, formulario = formulario });
+            formularioDTO = new FormularioVentaDTO
+            {
+                id = formulario.Id,
+                userID = formulario.UserID,
+                user = formulario.User,
+                estadoFormularioID = formulario.EstadoFormularioID,
+                estadoFormulario = formulario.EstadoFormulario,
+                campannaID = formulario.CampannaID,
+                campanna = formulario.Campanna,
+                ventaCampannas = _context.VentaCampanna
+                  .Include(vc => vc.ProductoCampanna)
+                  .ToList(),
+                totalPuntos = formulario.TotalPuntos,
+                fechaCreacion = formulario.FechaCreacion
+            };
+
+            return Ok(new { Message = "Formulario de venta validado con éxito.", TotalPuntos = totalPuntosFormulario, formulario = formularioDTO });
         }
 
 
@@ -291,6 +331,7 @@ namespace AptekFarma.Controllers
     {
         public int formularioID { get; set; }
         public List<VentaCampanna> ventaCampannas { get; set; }
+        public int idEstado { get; set; }
 
     }
 }

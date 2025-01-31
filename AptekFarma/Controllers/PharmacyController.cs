@@ -53,6 +53,7 @@ namespace AptekFarma.Controllers
         public async Task<IActionResult> GetPharmacies([FromBody] PharmacyFilterDTO filtro)
         {
             var pharmacies = await _context.Pharmacy
+                .Where(x => x.Activo == true)
                 .ToListAsync();
 
             if (filtro.Todas)
@@ -70,7 +71,7 @@ namespace AptekFarma.Controllers
                     pharmacies = pharmacies.Where(x => x.Direccion.ToLower().Contains(filtro.Direccion.ToLower())).ToList();
                 }
             }
-
+            pharmacies = pharmacies.OrderBy(x => x.Id).ToList();
             // Paginación
             int totalItems = pharmacies.Count;
             var paginatedPharmacies = pharmacies
@@ -84,7 +85,7 @@ namespace AptekFarma.Controllers
         [HttpGet("GetPharmacyById")]
         public async Task<IActionResult> GetPharmacyById(int id)
         {
-            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id);
+            var pharmacy = await _context.Pharmacy.FirstOrDefaultAsync(x => x.Id == id && x.Activo == true);
 
             if (pharmacy == null)
             {
@@ -109,7 +110,9 @@ namespace AptekFarma.Controllers
 
             await _context.Pharmacy.AddAsync(pharmacy);
             await _context.SaveChangesAsync();
-            var pharmacies = await _context.Pharmacy.ToListAsync();
+            //traer todas las farmacias ordenadas descendentemente
+            var pharmacies = await _context.Pharmacy.Where(p => p.Activo == true).ToListAsync();
+            pharmacies = pharmacies.OrderByDescending(x => x.Id).ToList();
 
             return Ok(new { message = "Farmacia creada correctamente", pharmacies });
         }
@@ -134,8 +137,8 @@ namespace AptekFarma.Controllers
 
             _context.Pharmacy.Update(pharmacy);
             await _context.SaveChangesAsync();
-            var pharmacies = await _context.Pharmacy.ToListAsync();
-
+            var pharmacies = await _context.Pharmacy.Where(p => p.Activo == true).ToListAsync();
+            pharmacies = pharmacies.OrderByDescending(x => x.Id).ToList();
             return Ok(new { message = "Farmacia editada correctamente", pharmacies });
         }
 
@@ -149,9 +152,11 @@ namespace AptekFarma.Controllers
                 return NotFound(new { message = "No se ha encontrado Farmacia" });
             }
 
-            _context.Pharmacy.Remove(pharmacy);
+            pharmacy.Activo = false;
+            _context.Pharmacy.Update(pharmacy);
             await _context.SaveChangesAsync();
-            var pharmacies = await _context.Pharmacy.ToListAsync();
+            var pharmacies = await _context.Pharmacy.Where(p => p.Activo == true).ToListAsync();
+            pharmacies = pharmacies.OrderByDescending(x => x.Id).ToList();
             return Ok(new { message = "Importado Correctamente", pharmacies });
         }
 
@@ -198,6 +203,7 @@ namespace AptekFarma.Controllers
                                 existingPharmacy.Localidad = localidad;
                                 existingPharmacy.Provincia = provincia;
                                 existingPharmacy.CP = cp;
+                                existingPharmacy.Activo = true;
                             }
                             else
                             {
@@ -208,7 +214,8 @@ namespace AptekFarma.Controllers
                                     Direccion = direccion,
                                     Localidad = localidad,
                                     Provincia = provincia,
-                                    CP = cp
+                                    CP = cp,
+                                    Activo = true
                                 });
                             }
                         }
@@ -224,7 +231,8 @@ namespace AptekFarma.Controllers
                 await _context.SaveChangesAsync();
 
                 // Obtener todas las farmacias después de la operación
-                pharmacies = await _context.Pharmacy.ToListAsync();
+                pharmacies = await _context.Pharmacy.Where(p => p.Activo == true).ToListAsync();
+                pharmacies = pharmacies.OrderByDescending(x => x.Id).ToList();
 
                 return Ok(new { message = "Importado Correctamente", pharmacies });
             }

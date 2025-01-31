@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Humanizer;
 
 
 namespace AptekFarma.Controllers
@@ -27,8 +28,7 @@ namespace AptekFarma.Controllers
         public async Task<IActionResult> GetAllCampannas()
         {
             return Ok(await _context.Campanna.Include(c => c.EstadoCampanna)
-                .Where(c => c.Activo == true)
-                .ToListAsync());
+                .Where(c => c.Activo == true).OrderByDescending(c => c.FechaInicio).ToListAsync());
         }
 
         [HttpGet("GetCampannaById")]
@@ -38,7 +38,7 @@ namespace AptekFarma.Controllers
             var productos = new List<ProductoCampanna>();
             if (campanna != null)
             {
-                productos = await _context.ProductoCampanna.Where(x => x.CampannaId == campanna.Id).ToListAsync();
+                productos = await _context.ProductoCampanna.Where(x => x.CampannaId == campanna.Id && x.Activo == true).OrderByDescending(x=> x.Id).ToListAsync();
             }
 
             if (campanna == null)
@@ -64,7 +64,7 @@ namespace AptekFarma.Controllers
             }
 
             var productos = await _context.ProductoCampanna
-                .Where(x => x.CampannaId == campanna.Id)
+                .Where(x => x.CampannaId == campanna.Id && x.Activo == true).OrderByDescending(x => x.Id)
                 .ToListAsync();
 
             var formularios = await _context.FormularioVenta
@@ -144,7 +144,7 @@ namespace AptekFarma.Controllers
 
 
         [HttpPost("CreateCampanna")]
-        public async Task<IActionResult> CreateCampanna(CrearCampannaDTO campannaDTO)
+        public async Task<IActionResult> CreateCampanna([FromForm] CrearCampannaDTO campannaDTO)
         {
 
             var campanna = new Campanna
@@ -160,6 +160,11 @@ namespace AptekFarma.Controllers
                 Activo = true
             };
 
+            if (campannaDTO.video != null)
+            {
+                campanna.Video = campannaDTO.video;
+            }
+
             // Asignar el estado de la campaña dependiendo de si la fecha actual está entre la fecha de inicio y fin
             if (DateTime.Now.Date >= campanna.FechaInicio.Date && DateTime.Now.Date <= campanna.FechaFin.Date)
             {
@@ -172,6 +177,35 @@ namespace AptekFarma.Controllers
 
             await _context.Campanna.AddAsync(campanna);
             await _context.SaveChangesAsync();
+
+            if (campannaDTO.pdf != null)
+            {
+
+                // Crear la carpeta si no existe
+                var folderPath = Path.Combine("wwwroot", "campannas", "pdfs", campanna.Id.ToString());
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                var imagePath = Path.Combine(folderPath, campannaDTO.pdf.FileName);
+
+                // Guardar la imagen en la carpeta estática
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await campannaDTO.pdf.CopyToAsync(stream);
+                }
+
+                // Guardar la URL relativa en la base de datos
+                var relativeImagePath = Path.Combine("campannas", "pdfs", campanna.Id.ToString(), campannaDTO.pdf.FileName);
+                // Reeemplazar las barras invertidas por barras normales
+                relativeImagePath = relativeImagePath.Replace("\\", "/");
+
+                campanna.PDF = relativeImagePath;
+                _context.Campanna.Update(campanna);
+                await _context.SaveChangesAsync();
+            }
+
             var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
                 .Where(c => c.Activo == true)
                 .ToListAsync();
@@ -180,7 +214,7 @@ namespace AptekFarma.Controllers
         }
 
         [HttpPut("UpdateCampanna")]
-        public async Task<IActionResult> UpdateCampanna([FromBody] UpdateCampannaDTO campannaDTO)
+        public async Task<IActionResult> UpdateCampanna([FromForm] UpdateCampannaDTO campannaDTO)
         {
             var campanna = await _context.Campanna
                 .FirstOrDefaultAsync(x => x.Id == campannaDTO.id);
@@ -204,6 +238,11 @@ namespace AptekFarma.Controllers
                 campanna.Imagen = campannaDTO.imagen;
             }
 
+            if (campannaDTO.video != null)
+            {
+                campanna.Video = campannaDTO.video;
+            }
+
             // Asignar el estado de la campaña dependiendo de si la fecha actual está entre la fecha de inicio y fin
             if (DateTime.Now.Date >= campanna.FechaInicio.Date && DateTime.Now.Date <= campanna.FechaFin.Date)
             {
@@ -217,6 +256,35 @@ namespace AptekFarma.Controllers
 
             _context.Campanna.Update(campanna);
             await _context.SaveChangesAsync();
+
+            if (campannaDTO.pdf != null)
+            {
+
+                // Crear la carpeta si no existe
+                var folderPath = Path.Combine("wwwroot", "campannas", "pdfs", campanna.Id.ToString());
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                var imagePath = Path.Combine(folderPath, campannaDTO.pdf.FileName);
+
+                // Guardar la imagen en la carpeta estática
+                using (var stream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await campannaDTO.pdf.CopyToAsync(stream);
+                }
+
+                // Guardar la URL relativa en la base de datos
+                var relativeImagePath = Path.Combine("campannas", "pdfs", campanna.Id.ToString(), campannaDTO.pdf.FileName);
+                // Reeemplazar las barras invertidas por barras normales
+                relativeImagePath = relativeImagePath.Replace("\\", "/");
+
+                campanna.PDF = relativeImagePath;
+                _context.Campanna.Update(campanna);
+                await _context.SaveChangesAsync();
+            }
+
             var campannas = await _context.Campanna
                 .Where(c => c.Activo == true)
                 .Include(c => c.EstadoCampanna).ToListAsync();
@@ -262,16 +330,14 @@ namespace AptekFarma.Controllers
                 .Where(c => c.Activo == true)
                 .ToListAsync();
 
+            var campannaDTOs = new List<CampannaDTO>();
             if (campannas == null || !campannas.Any())
             {
-                return NotFound("No se encontraron campañas.");
+                return Ok(campannaDTOs);
             }
-
-            var campannaDTOs = new List<CampannaDTO>();
 
             foreach (var campanna in campannas)
             {
-                // Filtrar formularios por CampannaID y UserID
                 var formularios = await _context.FormularioVenta
                     .Where(f => f.CampannaID == campanna.Id && f.UserID == userID)
                     .ToListAsync();
@@ -296,6 +362,8 @@ namespace AptekFarma.Controllers
                     fechaFin = campanna.FechaFin,
                     fechaValido = campanna.FechaValido,
                     estadoCampanna = campanna.EstadoCampanna,
+                    PDF = campanna.PDF,
+                    Video = campanna.Video,
                     informesPendientes = formulariosNoValidados.Count,
                     informesConfirmados = formulariosValidados.Count,
                     puntosObtenidos = formulariosValidados.Sum(f => f.TotalPuntos)
@@ -304,10 +372,36 @@ namespace AptekFarma.Controllers
                 campannaDTOs.Add(campannaDTO);
             }
 
+            campannaDTOs = campannaDTOs.OrderByDescending(c => c.fechaInicio).ToList();
             return Ok(campannaDTOs);
         }
 
+        [HttpGet("GetPdfByCampannaId")]
+        public async Task<IActionResult> GetPdfByCampannaId(int id)
+        {
+            var campanna = await _context.Campanna
+                .FirstOrDefaultAsync(c => c.Id == id);
 
+            if (campanna == null)
+            {
+                return NotFound(new { message = "No se ha encontrado la campaña" });
+            }
 
+            if (string.IsNullOrEmpty(campanna.PDF))
+            {
+                return NotFound(new { message = "No se ha encontrado el archivo PDF asociado a esta campaña" });
+            }
+
+            var pdfFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", campanna.PDF);
+
+            if (!System.IO.File.Exists(pdfFilePath))
+            {
+                return NotFound(new { message = "El archivo PDF no se encuentra en el servidor" });
+            }
+
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(pdfFilePath);
+
+            return File(fileBytes, "application/pdf", campanna.PDF);
+        }
     }
 }
