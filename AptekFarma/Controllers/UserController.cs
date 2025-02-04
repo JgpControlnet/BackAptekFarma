@@ -22,7 +22,7 @@ using AptekFarma.Models;
 
 namespace AptekFarma.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("rest/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {

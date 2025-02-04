@@ -24,7 +24,7 @@ using System.Globalization;
 
 namespace AptekFarma.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("rest/[controller]")]
     [ApiController]
     [Authorize]
     public class PharmacyController : ControllerBase
