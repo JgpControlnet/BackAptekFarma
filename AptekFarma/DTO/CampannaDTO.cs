@@ -19,6 +19,7 @@ namespace AptekFarma.DTO
         public double? puntosObtenidos { get; set; }
         public string? PDF { get; set; }
         public string? Video { get; set; }
+        public Video? videoArchivo { get; set; }
 
     }
 }

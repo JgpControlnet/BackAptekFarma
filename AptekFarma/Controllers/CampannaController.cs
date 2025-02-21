@@ -403,6 +403,7 @@ namespace AptekFarma.Controllers
 
             var campannas = await _context.Campanna
                 .Include(c => c.EstadoCampanna)
+                .Include(c => c.VideoArchivo)
                 .Where(c => c.Activo == true)
                 .ToListAsync();
 
@@ -442,7 +443,8 @@ namespace AptekFarma.Controllers
                     Video = campanna.Video,
                     informesPendientes = formulariosNoValidados.Count,
                     informesConfirmados = formulariosValidados.Count,
-                    puntosObtenidos = formulariosValidados.Sum(f => f.TotalPuntos)
+                    puntosObtenidos = formulariosValidados.Sum(f => f.TotalPuntos),
+                    videoArchivo = campanna.VideoArchivo
                 };
 
                 campannaDTOs.Add(campannaDTO);
