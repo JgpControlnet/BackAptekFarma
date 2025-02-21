@@ -14,7 +14,7 @@ namespace AptekFarma.DTO
         public DateTime fechaValido { get; set; }
         public IFormFile? pdf { get; set; }
         public string? video { get; set; }
-        
+        public IFormFile? videoArchivo { get; set; }        
 
     }
 }

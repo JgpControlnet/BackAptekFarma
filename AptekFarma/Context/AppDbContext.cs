@@ -22,5 +22,6 @@ namespace AptekFarma.Context
         public DbSet<VentaPuntos> VentaPuntos { get; set; }
         public DbSet<EstadoCampanna> EstadoCampanna { get; set; }
         public DbSet<EstadoFormulario> EstadoFormulario { get; set; }
+        public DbSet<Video> Video { get; set; }
     }
 }

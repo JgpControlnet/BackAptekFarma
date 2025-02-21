@@ -16,6 +16,7 @@ namespace AptekFarma.DTO
         public int? estadoCampanna { get; set; }
         public IFormFile? pdf { get; set; }
         public string? video { get; set; }
+        public IFormFile? videoArchivo { get; set; }
 
 
     }
