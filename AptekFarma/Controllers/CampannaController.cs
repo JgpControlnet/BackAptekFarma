@@ -25,9 +25,12 @@ namespace AptekFarma.Controllers
         }
 
         [HttpPost("GetAllCampannas")]
+        [RequestSizeLimit(70 * 1024 * 1024)]
         public async Task<IActionResult> GetAllCampannas()
         {
-            return Ok(await _context.Campanna.Include(c => c.EstadoCampanna)
+            return Ok(await _context.Campanna
+                .Include(c => c.EstadoCampanna)
+                .Include(c => c.VideoArchivo)
                 .Where(c => c.Activo == true).OrderByDescending(c => c.FechaInicio).ToListAsync());
         }
 
@@ -344,7 +347,7 @@ namespace AptekFarma.Controllers
                     await campannaDTO.videoArchivo.CopyToAsync(stream);
                 }
 
-                
+
                 var nuevoVideo = new Video
                 {
                     Nombre = campannaDTO.videoArchivo.FileName,
@@ -355,15 +358,33 @@ namespace AptekFarma.Controllers
                 _context.Video.Add(nuevoVideo);
                 await _context.SaveChangesAsync();
 
-                
+
                 campanna.VideoId = nuevoVideo.Id;
                 _context.Campanna.Update(campanna);
                 await _context.SaveChangesAsync();
             }
+            else {
 
-            var campannas = await _context.Campanna
-                .Where(c => c.Activo == true)
-                .Include(c => c.EstadoCampanna).ToListAsync();
+                if (campanna.VideoArchivo != null)
+                {
+                    var videoAnteriorPath = Path.Combine("wwwroot", campanna.VideoArchivo.Ruta);
+                    if (System.IO.File.Exists(videoAnteriorPath))
+                    {
+                        System.IO.File.Delete(videoAnteriorPath);
+                    }
+
+                    _context.Video.Remove(campanna.VideoArchivo);
+                    await _context.SaveChangesAsync();
+                }
+
+                campanna.VideoId = null;
+                _context.Campanna.Update(campanna);
+            }
+                var campannas = await _context.Campanna
+                    .Where(c => c.Activo == true)
+                    .Include(c => c.EstadoCampanna)
+                    .Include(c => c.VideoArchivo)
+                    .ToListAsync();
 
             return Ok(new { message = "Campaña editada correctamente", campannas });
         }
