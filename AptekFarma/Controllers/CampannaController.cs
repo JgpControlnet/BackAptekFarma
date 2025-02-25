@@ -11,7 +11,7 @@ using Humanizer;
 
 namespace AptekFarma.Controllers
 {
-    [Route("rest/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class CampannaController : ControllerBase

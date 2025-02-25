@@ -12,7 +12,7 @@ using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 namespace AptekFarma.Controllers
 {
-    [Route("rest/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class FormularioVentaCampannaController : ControllerBase

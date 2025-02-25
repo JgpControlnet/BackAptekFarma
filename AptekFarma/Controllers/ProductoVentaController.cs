@@ -10,7 +10,7 @@ using OfficeOpenXml;
 
 namespace AptekFarma.Controllers
 {
-    [Route("rest/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class ProductoVentaController : ControllerBase

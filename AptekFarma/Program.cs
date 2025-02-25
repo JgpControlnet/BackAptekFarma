@@ -106,13 +106,13 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseSwagger(c =>
 {
-    c.RouteTemplate = "rest/swagger/{documentName}/swagger.json";
+    c.RouteTemplate = "api/swagger/{documentName}/swagger.json";
 });
 
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/rest/swagger/v1/swagger.json", "API AptekFarma");
-    c.RoutePrefix = "rest/swagger";
+    c.SwaggerEndpoint("/api/swagger/v1/swagger.json", "API AptekFarma");
+    c.RoutePrefix = "api/swagger";
 });
 
 app.UseSerilogRequestLogging();
