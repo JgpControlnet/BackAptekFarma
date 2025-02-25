@@ -25,16 +25,21 @@ namespace AptekFarma.Controllers
         }
 
         [HttpPost("GetAllCampannas")]
+        [RequestSizeLimit(70 * 1024 * 1024)]
         public async Task<IActionResult> GetAllCampannas()
         {
-            return Ok(await _context.Campanna.Include(c => c.EstadoCampanna)
+            return Ok(await _context.Campanna
+                .Include(c => c.EstadoCampanna)
+                .Include(c => c.VideoArchivo)
                 .Where(c => c.Activo == true).OrderByDescending(c => c.FechaInicio).ToListAsync());
         }
 
         [HttpGet("GetCampannaById")]
         public async Task<IActionResult> GetCampannaById(int id)
         {
-            var campanna = await _context.Campanna.Include(c => c.EstadoCampanna).FirstOrDefaultAsync(x => x.Id == id);
+            var campanna = await _context.Campanna.Include(c => c.EstadoCampanna)
+                .Include(c => c.VideoArchivo)
+                .FirstOrDefaultAsync(x => x.Id == id);
             var productos = new List<ProductoCampanna>();
             if (campanna != null)
             {
@@ -144,6 +149,7 @@ namespace AptekFarma.Controllers
 
 
         [HttpPost("CreateCampanna")]
+        [RequestSizeLimit(70 * 1024 * 1024)]
         public async Task<IActionResult> CreateCampanna([FromForm] CrearCampannaDTO campannaDTO)
         {
 
@@ -206,6 +212,35 @@ namespace AptekFarma.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            if (campannaDTO.videoArchivo != null)
+            {
+
+                var videoFolderPath = Path.Combine("wwwroot", "campannas", "videos", campanna.Id.ToString());
+                if (!Directory.Exists(videoFolderPath))
+                    Directory.CreateDirectory(videoFolderPath);
+
+                var videoPath = Path.Combine(videoFolderPath, campannaDTO.videoArchivo.FileName);
+                using (var stream = new FileStream(videoPath, FileMode.Create))
+                {
+                    await campannaDTO.videoArchivo.CopyToAsync(stream);
+                }
+
+                var nuevoVideo = new Video
+                {
+                    Nombre = campannaDTO.videoArchivo.FileName,
+                    Ruta = Path.Combine("campannas", "videos", campanna.Id.ToString(), campannaDTO.videoArchivo.FileName).Replace("\\", "/"),
+                    FechaSubida = DateTime.UtcNow
+                };
+
+                _context.Video.Add(nuevoVideo);
+                await _context.SaveChangesAsync();
+
+                campanna.VideoId = nuevoVideo.Id;
+                _context.Campanna.Update(campanna);
+                await _context.SaveChangesAsync();
+            }
+
+
             var campannas = await _context.Campanna.Include(c => c.EstadoCampanna)
                 .Where(c => c.Activo == true)
                 .ToListAsync();
@@ -214,9 +249,11 @@ namespace AptekFarma.Controllers
         }
 
         [HttpPut("UpdateCampanna")]
+        [RequestSizeLimit(70 * 1024 * 1024)]
         public async Task<IActionResult> UpdateCampanna([FromForm] UpdateCampannaDTO campannaDTO)
         {
             var campanna = await _context.Campanna
+                .Include(c => c.VideoArchivo)
                 .FirstOrDefaultAsync(x => x.Id == campannaDTO.id);
 
 
@@ -285,9 +322,69 @@ namespace AptekFarma.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            var campannas = await _context.Campanna
-                .Where(c => c.Activo == true)
-                .Include(c => c.EstadoCampanna).ToListAsync();
+            if (campannaDTO.videoArchivo != null)
+            {
+
+                if (campanna.VideoArchivo != null)
+                {
+                    var videoAnteriorPath = Path.Combine("wwwroot", campanna.VideoArchivo.Ruta);
+                    if (System.IO.File.Exists(videoAnteriorPath))
+                    {
+                        System.IO.File.Delete(videoAnteriorPath);
+                    }
+
+                    _context.Video.Remove(campanna.VideoArchivo);
+                    await _context.SaveChangesAsync();
+                }
+
+                var videoFolderPath = Path.Combine("wwwroot", "campannas", "videos", campanna.Id.ToString());
+                if (!Directory.Exists(videoFolderPath))
+                    Directory.CreateDirectory(videoFolderPath);
+
+                var videoPath = Path.Combine(videoFolderPath, campannaDTO.videoArchivo.FileName);
+                using (var stream = new FileStream(videoPath, FileMode.Create))
+                {
+                    await campannaDTO.videoArchivo.CopyToAsync(stream);
+                }
+
+
+                var nuevoVideo = new Video
+                {
+                    Nombre = campannaDTO.videoArchivo.FileName,
+                    Ruta = Path.Combine("campannas", "videos", campanna.Id.ToString(), campannaDTO.videoArchivo.FileName).Replace("\\", "/"),
+                    FechaSubida = DateTime.UtcNow
+                };
+
+                _context.Video.Add(nuevoVideo);
+                await _context.SaveChangesAsync();
+
+
+                campanna.VideoId = nuevoVideo.Id;
+                _context.Campanna.Update(campanna);
+                await _context.SaveChangesAsync();
+            }
+            else {
+
+                if (campanna.VideoArchivo != null)
+                {
+                    var videoAnteriorPath = Path.Combine("wwwroot", campanna.VideoArchivo.Ruta);
+                    if (System.IO.File.Exists(videoAnteriorPath))
+                    {
+                        System.IO.File.Delete(videoAnteriorPath);
+                    }
+
+                    _context.Video.Remove(campanna.VideoArchivo);
+                    await _context.SaveChangesAsync();
+                }
+
+                campanna.VideoId = null;
+                _context.Campanna.Update(campanna);
+            }
+                var campannas = await _context.Campanna
+                    .Where(c => c.Activo == true)
+                    .Include(c => c.EstadoCampanna)
+                    .Include(c => c.VideoArchivo)
+                    .ToListAsync();
 
             return Ok(new { message = "Campaña editada correctamente", campannas });
         }
@@ -327,6 +424,7 @@ namespace AptekFarma.Controllers
 
             var campannas = await _context.Campanna
                 .Include(c => c.EstadoCampanna)
+                .Include(c => c.VideoArchivo)
                 .Where(c => c.Activo == true)
                 .ToListAsync();
 
@@ -366,7 +464,8 @@ namespace AptekFarma.Controllers
                     Video = campanna.Video,
                     informesPendientes = formulariosNoValidados.Count,
                     informesConfirmados = formulariosValidados.Count,
-                    puntosObtenidos = formulariosValidados.Sum(f => f.TotalPuntos)
+                    puntosObtenidos = formulariosValidados.Sum(f => f.TotalPuntos),
+                    videoArchivo = campanna.VideoArchivo
                 };
 
                 campannaDTOs.Add(campannaDTO);
@@ -403,5 +502,30 @@ namespace AptekFarma.Controllers
 
             return File(fileBytes, "application/pdf", campanna.PDF);
         }
+
+        [HttpGet("GetVideoByCampannaId")]
+        [RequestSizeLimit(70 * 1024 * 1024)]
+        public async Task<IActionResult> GetVideoByCampannaId(int id)
+        {
+            var campanna = await _context.Campanna
+                .Include(c => c.VideoArchivo)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (campanna == null)
+                return NotFound(new { message = "No se ha encontrado la campaña" });
+
+            if (campanna.VideoArchivo == null || string.IsNullOrEmpty(campanna.VideoArchivo.Ruta))
+                return NotFound(new { message = "No se ha encontrado el archivo de video" });
+
+            var videoFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", campanna.VideoArchivo.Ruta);
+
+            if (!System.IO.File.Exists(videoFilePath))
+                return NotFound(new { message = "El archivo de video no se encuentra en el servidor" });
+
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(videoFilePath);
+
+            return File(fileBytes, "video/mp4", campanna.VideoArchivo.Nombre);
+        }
+
     }
 }

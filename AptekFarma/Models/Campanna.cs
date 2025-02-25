@@ -25,5 +25,9 @@ namespace AptekFarma.Models
         public string? Video { get; set; }
         public bool Activo { get; set; }
 
+        public int? VideoId { get; set; }
+        [ForeignKey("VideoId")]
+        public Video? VideoArchivo { get; set; }
+
     }
 }

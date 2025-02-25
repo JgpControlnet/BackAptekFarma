@@ -13,7 +13,7 @@
 
             public async Task InvokeAsync(HttpContext context)
             {
-                if (context.Request.Path.StartsWithSegments("/campannas"))
+                if (context.Request.Path.StartsWithSegments("/campannas/pdf"))
                 {
                         Console.WriteLine("Acceso denegado: usuario no autenticado.");
                         context.Response.StatusCode = StatusCodes.Status403Forbidden;
